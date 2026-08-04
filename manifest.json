@@ -1,0 +1,10 @@
+{
+  "id": "window-overlay",
+  "name": "Window Overlay",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.0",
+  "description": "Manage opacity and pinning for individual Obsidian windows on macOS.",
+  "author": "Mohammad",
+  "isDesktopOnly": true
+}
+

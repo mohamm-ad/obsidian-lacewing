@@ -1,0 +1,6 @@
+.window-overlay-manager {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3);
+}
+
