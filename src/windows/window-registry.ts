@@ -68,6 +68,30 @@ export class WindowRegistry {
 		return this.targets.get(runtimeId)?.controller ?? null;
 	}
 
+	setPreference(runtimeId: string, preference: WindowPreference): boolean {
+		const applied =
+			this.targets.get(runtimeId)?.controller?.setPreference(preference) ?? false;
+		this.emitChange();
+		return applied;
+	}
+
+	focus(runtimeId: string): boolean {
+		const controller = this.targets.get(runtimeId)?.controller;
+		if (!controller) {
+			return false;
+		}
+		controller.focus();
+		this.emitChange();
+		return true;
+	}
+
+	restoreAll(): void {
+		for (const target of this.targets.values()) {
+			target.controller?.setPreference(DEFAULT_WINDOW_PREFERENCE);
+		}
+		this.emitChange();
+	}
+
 	async sync(candidates: readonly WindowCandidate[]): Promise<void> {
 		const candidateIds = new Set(candidates.map((candidate) => candidate.runtimeId));
 		for (const [runtimeId, target] of this.targets) {

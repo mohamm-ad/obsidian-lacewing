@@ -31,4 +31,10 @@ export default defineConfig(
 			"@typescript-eslint/no-misused-promises": "error",
 		},
 	},
+	{
+		files: ["tests/**/*.ts"],
+		rules: {
+			"obsidianmd/no-global-this": "off",
+		},
+	},
 );
