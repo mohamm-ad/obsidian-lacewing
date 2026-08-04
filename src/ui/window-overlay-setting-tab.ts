@@ -13,6 +13,17 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 	override getSettingDefinitions(): SettingDefinitionItem[] {
 		return [
 			{
+				name: "Manage open windows",
+				desc: "Adjust opacity and pinning for the main vault window and each pop-out.",
+				render: (setting) => {
+					setting.addButton((button) =>
+						button.setButtonText("Open manager").setCta().onClick(() => {
+							this.windowOverlay.openWindowManager();
+						}),
+					);
+				},
+			},
+			{
 				name: "Default overlay opacity",
 				desc: "Opacity used when opening a note as a new overlay.",
 				control: {

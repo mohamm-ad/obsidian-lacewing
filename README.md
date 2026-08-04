@@ -29,17 +29,24 @@ their identities are ambiguous.
 
 ## Commands
 
-Window Overlay registers these commands without default hotkeys:
+Open the manager from the picture-in-picture icon in Obsidian's left ribbon,
+from **Settings → Window Overlay → Open manager**, or from the Command Palette.
 
-- Open window manager
-- Open current note as overlay
-- Increase active-window opacity
-- Decrease active-window opacity
-- Toggle active-window pinning
-- Restore active window to 100%
-- Restore every managed overlay
+Default macOS hotkeys use a dedicated Command–Option–Shift family:
 
-Use Obsidian's **Hotkeys** settings to assign shortcuts if desired.
+| Command | Default hotkey |
+| --- | --- |
+| Open window manager | `⌘⌥⇧O` |
+| Open current note as overlay | `⌘⌥⇧N` |
+| Increase active-window opacity | `⌘⌥⇧]` |
+| Decrease active-window opacity | `⌘⌥⇧[` |
+| Toggle active-window pinning | `⌘⌥⇧P` |
+| Restore active window to 100% | `⌘⌥⇧0` |
+| Restore every managed overlay | `⌘⌥⇧R` |
+
+These do not overlap the primary development vault's existing custom hotkeys.
+Change or remove them under **Settings → Hotkeys** by searching for “Window
+Overlay.”
 
 ## Safety model
 
