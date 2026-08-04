@@ -1,0 +1,122 @@
+import { describe, expect, it, vi } from "vitest";
+import type { ElectronWindowAdapter, NativeBrowserWindow, NativeEventListener, NativeEventName } from "../src/native/electron-window-adapter";
+import { WindowRegistry, type WindowCandidate } from "../src/windows/window-registry";
+
+class RegistryNativeWindow implements NativeBrowserWindow {
+	readonly webContents = { executeJavaScript: vi.fn(async () => true) };
+	readonly listeners = new Map<NativeEventName, Set<NativeEventListener>>();
+	opacity = 1;
+	pinned = false;
+	destroyed = false;
+	focused = false;
+	readonly setOpacity = vi.fn((opacity: number) => {
+		this.opacity = opacity;
+	});
+	readonly setAlwaysOnTop = vi.fn((pinned: boolean) => {
+		this.pinned = pinned;
+	});
+	readonly focus = vi.fn(() => {
+		this.focused = true;
+	});
+	readonly restore = vi.fn();
+	readonly show = vi.fn();
+
+	constructor(readonly id: number) {}
+	getOpacity(): number { return this.opacity; }
+	isAlwaysOnTop(): boolean { return this.pinned; }
+	isDestroyed(): boolean { return this.destroyed; }
+	isFocused(): boolean { return this.focused; }
+	isMinimized(): boolean { return false; }
+	on(event: NativeEventName, listener: NativeEventListener): void {
+		const listeners = this.listeners.get(event) ?? new Set();
+		listeners.add(listener);
+		this.listeners.set(event, listeners);
+	}
+	removeListener(event: NativeEventName, listener: NativeEventListener): void {
+		this.listeners.get(event)?.delete(listener);
+	}
+}
+
+function candidate(
+	runtimeId: string,
+	kind: "main" | "popout",
+	leaves: WindowCandidate["leaves"],
+): WindowCandidate {
+	const documentEvents = new EventTarget();
+	const windowEvents = new EventTarget();
+	const document = {
+		documentElement: { dataset: {} },
+		defaultView: windowEvents,
+		addEventListener: documentEvents.addEventListener.bind(documentEvents),
+		removeEventListener: documentEvents.removeEventListener.bind(documentEvents),
+	} as unknown as Document;
+	return {
+		runtimeId,
+		kind,
+		label: runtimeId,
+		document,
+		domWindow: windowEvents as unknown as Window,
+		leaves,
+	};
+}
+
+describe("window registry", () => {
+	it("classifies duplicate note windows as session-only", async () => {
+		const nativeWindows = new Map([
+			["one", new RegistryNativeWindow(1)],
+			["two", new RegistryNativeWindow(2)],
+		]);
+		const adapter = {
+			resolve: vi.fn(async (_kind, _document, runtimeId: string) => {
+				const nativeWindow = nativeWindows.get(runtimeId);
+				if (!nativeWindow) throw new Error("Missing test window");
+				return nativeWindow;
+			}),
+		} as unknown as ElectronWindowAdapter;
+		const registry = new WindowRegistry(adapter, () => null);
+
+		await registry.sync([
+			candidate("one", "popout", [{ type: "markdown", filePath: "Call.md" }]),
+			candidate("two", "popout", [{ type: "markdown", filePath: "Call.md" }]),
+		]);
+
+		expect(registry.descriptors.map((item) => item.persistence)).toEqual([
+			{ key: null, reason: "duplicate-note" },
+			{ key: null, reason: "duplicate-note" },
+		]);
+	});
+
+	it("applies saved preferences and restores adopted windows on cleanup", async () => {
+		const nativeWindow = new RegistryNativeWindow(3);
+		const adapter = {
+			resolve: vi.fn(async () => nativeWindow),
+		} as unknown as ElectronWindowAdapter;
+		const registry = new WindowRegistry(adapter, (identity) =>
+			identity.key === "main" ? { opacity: 0.75, pinned: true } : null,
+		);
+
+		await registry.sync([candidate("main", "main", [])]);
+		expect(nativeWindow.opacity).toBe(0.75);
+		expect(nativeWindow.pinned).toBe(true);
+
+		await registry.sync([]);
+		expect(nativeWindow.opacity).toBe(1);
+		expect(nativeWindow.pinned).toBe(false);
+		expect(registry.descriptors).toEqual([]);
+	});
+
+	it("keeps unsupported native windows visible in the manager model", async () => {
+		const adapter = {
+			resolve: vi.fn(async () => {
+				throw new Error("Electron is unavailable");
+			}),
+		} as unknown as ElectronWindowAdapter;
+		const registry = new WindowRegistry(adapter, () => null);
+
+		await registry.sync([candidate("main", "main", [])]);
+		expect(registry.descriptors[0]).toMatchObject({
+			supported: false,
+			error: "Electron is unavailable",
+		});
+	});
+});

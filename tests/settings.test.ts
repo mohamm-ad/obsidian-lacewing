@@ -45,7 +45,7 @@ describe("settings normalization", () => {
 		});
 
 		expect(settings.defaultOverlayOpacity).toBe(MIN_OPACITY);
-		expect(settings.main).toEqual({ opacity: 1, pinned: false });
+		expect(settings.main).toBeNull();
 		expect(settings.notePopouts).toEqual({
 			"Meetings/Call.md": { opacity: 0.76, pinned: true },
 		});
@@ -104,4 +104,3 @@ describe("persistence classification", () => {
 		expect(notePathFromWindowKey("main")).toBeNull();
 	});
 });
-

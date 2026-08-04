@@ -9,7 +9,12 @@ export interface WindowLeafIdentity {
 
 export interface PersistenceIdentity {
 	key: string | null;
-	reason: "main" | "single-note" | "mixed" | "non-note";
+	reason:
+		| "main"
+		| "single-note"
+		| "mixed"
+		| "non-note"
+		| "duplicate-note";
 }
 
 export interface WindowTargetDescriptor {
@@ -50,4 +55,3 @@ export function persistenceIdentity(
 export function notePathFromWindowKey(key: string): string | null {
 	return key.startsWith("note:") ? key.slice("note:".length) : null;
 }
-

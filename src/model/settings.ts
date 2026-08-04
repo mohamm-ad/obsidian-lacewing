@@ -13,7 +13,7 @@ export interface WindowPreference {
 export interface WindowOverlaySettings {
 	schemaVersion: typeof SETTINGS_SCHEMA_VERSION;
 	defaultOverlayOpacity: number;
-	main: WindowPreference;
+	main: WindowPreference | null;
 	notePopouts: Record<string, WindowPreference>;
 }
 
@@ -25,12 +25,23 @@ export const DEFAULT_WINDOW_PREFERENCE: Readonly<WindowPreference> = {
 export const DEFAULT_SETTINGS: Readonly<WindowOverlaySettings> = {
 	schemaVersion: SETTINGS_SCHEMA_VERSION,
 	defaultOverlayOpacity: DEFAULT_OVERLAY_OPACITY,
-	main: DEFAULT_WINDOW_PREFERENCE,
+	main: null,
 	notePopouts: {},
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPreferenceRecord(
+	value: unknown,
+): value is Record<"opacity" | "pinned", unknown> {
+	return (
+		isRecord(value) &&
+		typeof value.opacity === "number" &&
+		Number.isFinite(value.opacity) &&
+		typeof value.pinned === "boolean"
+	);
 }
 
 export function clampOpacity(value: unknown, fallback = MAX_OPACITY): number {
@@ -73,7 +84,7 @@ export function normalizeSettings(value: unknown): WindowOverlaySettings {
 	const notePopouts: Record<string, WindowPreference> = {};
 	if (isRecord(value.notePopouts)) {
 		for (const [path, preference] of Object.entries(value.notePopouts)) {
-			if (path.trim().length > 0 && isRecord(preference)) {
+			if (path.trim().length > 0 && isPreferenceRecord(preference)) {
 				notePopouts[path] = normalizePreference(preference);
 			}
 		}
@@ -85,7 +96,7 @@ export function normalizeSettings(value: unknown): WindowOverlaySettings {
 			value.defaultOverlayOpacity,
 			DEFAULT_OVERLAY_OPACITY,
 		),
-		main: normalizePreference(value.main),
+		main: isPreferenceRecord(value.main) ? normalizePreference(value.main) : null,
 		notePopouts,
 	};
 }
@@ -96,7 +107,7 @@ export function cloneSettings(
 	return {
 		schemaVersion: SETTINGS_SCHEMA_VERSION,
 		defaultOverlayOpacity: settings.defaultOverlayOpacity,
-		main: { ...settings.main },
+		main: settings.main ? { ...settings.main } : null,
 		notePopouts: Object.fromEntries(
 			Object.entries(settings.notePopouts).map(([path, preference]) => [
 				path,
@@ -134,4 +145,3 @@ export function removeNotePreference(
 	delete settings.notePopouts[path];
 	return true;
 }
-
