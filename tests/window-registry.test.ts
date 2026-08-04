@@ -119,4 +119,28 @@ describe("window registry", () => {
 			error: "Electron is unavailable",
 		});
 	});
+
+	it("does not adopt a window when resolution finishes after disposal", async () => {
+		const nativeWindow = new RegistryNativeWindow(4);
+		let finishResolution!: (value: NativeBrowserWindow) => void;
+		const resolution = new Promise<NativeBrowserWindow>((resolve) => {
+			finishResolution = resolve;
+		});
+		const adapter = {
+			resolve: vi.fn(async () => await resolution),
+		} as unknown as ElectronWindowAdapter;
+		const registry = new WindowRegistry(adapter, () => ({
+			opacity: 0.7,
+			pinned: true,
+		}));
+
+		const sync = registry.sync([candidate("main", "main", [])]);
+		registry.dispose();
+		finishResolution(nativeWindow);
+		await sync;
+
+		expect(registry.descriptors).toEqual([]);
+		expect(nativeWindow.setOpacity).not.toHaveBeenCalled();
+		expect(nativeWindow.listeners.size).toBe(0);
+	});
 });

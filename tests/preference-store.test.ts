@@ -99,4 +99,36 @@ describe("preference store", () => {
 		).toBe(false);
 		expect(store.settings.notePopouts).toEqual({});
 	});
+
+	it("flushes one pending write on disposal and cancels its timer", async () => {
+		vi.useFakeTimers();
+		const save = vi.fn(async () => {});
+		const store = new PreferenceStore(null, save, 100, timerHost);
+		store.setDefaultOverlayOpacity(0.7);
+
+		store.dispose();
+		store.dispose();
+		await vi.runAllTimersAsync();
+		await Promise.resolve();
+
+		expect(save).toHaveBeenCalledOnce();
+		vi.useRealTimers();
+	});
+
+	it("replaces pending local data when settings change externally", async () => {
+		vi.useFakeTimers();
+		const save = vi.fn(async () => {});
+		const store = new PreferenceStore(null, save, 100, timerHost);
+		store.setDefaultOverlayOpacity(0.7);
+		store.replace({
+			defaultOverlayOpacity: 0.9,
+			main: { opacity: 0.8, pinned: true },
+		});
+		await vi.runAllTimersAsync();
+
+		expect(save).not.toHaveBeenCalled();
+		expect(store.settings.defaultOverlayOpacity).toBe(0.9);
+		expect(store.settings.main).toEqual({ opacity: 0.8, pinned: true });
+		vi.useRealTimers();
+	});
 });

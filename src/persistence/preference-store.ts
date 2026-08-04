@@ -26,6 +26,8 @@ export class PreferenceStore {
 	private value: WindowOverlaySettings;
 	private timer: number | null = null;
 	private saveQueue: Promise<void> = Promise.resolve();
+	private dirty = false;
+	private disposed = false;
 
 	constructor(
 		rawSettings: unknown,
@@ -38,6 +40,15 @@ export class PreferenceStore {
 
 	get settings(): WindowOverlaySettings {
 		return cloneSettings(this.value);
+	}
+
+	replace(rawSettings: unknown): void {
+		if (this.timer) {
+			this.timerHost.clearTimeout(this.timer);
+			this.timer = null;
+		}
+		this.dirty = false;
+		this.value = normalizeSettings(rawSettings);
 	}
 
 	resolve(identity: PersistenceIdentity): WindowPreference | null {
@@ -162,6 +173,10 @@ export class PreferenceStore {
 	}
 
 	dispose(): void {
+		if (this.disposed) {
+			return;
+		}
+		this.disposed = true;
 		if (this.timer) {
 			this.timerHost.clearTimeout(this.timer);
 			this.timer = null;
@@ -170,6 +185,10 @@ export class PreferenceStore {
 	}
 
 	private scheduleSave(): void {
+		this.dirty = true;
+		if (this.disposed) {
+			return;
+		}
 		if (this.timer) {
 			this.timerHost.clearTimeout(this.timer);
 		}
@@ -180,8 +199,14 @@ export class PreferenceStore {
 	}
 
 	private enqueueSave(): void {
+		if (!this.dirty) {
+			return;
+		}
+		this.dirty = false;
 		const snapshot = cloneSettings(this.value);
-		this.saveQueue = this.saveQueue.then(() => this.save(snapshot));
+		this.saveQueue = this.saveQueue
+			.catch(() => undefined)
+			.then(() => this.save(snapshot));
 	}
 }
 

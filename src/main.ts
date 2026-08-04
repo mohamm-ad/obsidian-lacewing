@@ -41,7 +41,11 @@ export default class WindowOverlayPlugin extends Plugin {
 	override async onload(): Promise<void> {
 		this.store = new PreferenceStore(await this.loadData(), async (settings) => {
 			this.settings = settings;
-			await this.saveData(settings);
+			try {
+				await this.saveData(settings);
+			} catch (error) {
+				console.error("Window overlay could not save settings", error);
+			}
 		});
 		this.settings = this.store.settings;
 		this.addSettingTab(new WindowOverlaySettingTab(this.app, this));
@@ -155,6 +159,15 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.source = null;
 		this.store = null;
 		this.activeCommands = null;
+	}
+
+	override async onExternalSettingsChange(): Promise<void> {
+		if (!this.store) {
+			return;
+		}
+		this.store.replace(await this.loadData());
+		this.settings = this.store.settings;
+		this.registry?.reapplyPersistentPreferences();
 	}
 
 	setDefaultOverlayOpacity(opacity: number): void {

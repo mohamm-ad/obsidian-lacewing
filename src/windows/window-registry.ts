@@ -35,6 +35,7 @@ export type PreferenceResolver = (
 export class WindowRegistry {
 	private readonly targets = new Map<string, ManagedWindowTarget>();
 	private readonly listeners = new Set<() => void>();
+	private disposed = false;
 
 	constructor(
 		private readonly adapter: ElectronWindowAdapter,
@@ -92,7 +93,23 @@ export class WindowRegistry {
 		this.emitChange();
 	}
 
+	reapplyPersistentPreferences(): void {
+		for (const target of this.targets.values()) {
+			if (!target.persistence.key) {
+				continue;
+			}
+			const preference =
+				this.resolvePreference(target.persistence) ?? DEFAULT_WINDOW_PREFERENCE;
+			target.controller?.setPreference(preference);
+		}
+		this.emitChange();
+	}
+
 	async sync(candidates: readonly WindowCandidate[]): Promise<void> {
+		if (this.disposed) {
+			return;
+		}
+
 		const candidateIds = new Set(candidates.map((candidate) => candidate.runtimeId));
 		for (const [runtimeId, target] of this.targets) {
 			if (!candidateIds.has(runtimeId)) {
@@ -114,6 +131,9 @@ export class WindowRegistry {
 
 		await Promise.all(
 			identities.map(async ({ candidate, persistence }) => {
+				if (this.disposed) {
+					return;
+				}
 				if (persistence.key && (counts.get(persistence.key) ?? 0) > 1) {
 					persistence = { key: null, reason: "duplicate-note" };
 				}
@@ -145,6 +165,12 @@ export class WindowRegistry {
 						candidate.document,
 						candidate.runtimeId,
 					);
+					if (
+						this.disposed ||
+						this.targets.get(candidate.runtimeId) !== target
+					) {
+						return;
+					}
 					target.controller = new NativeWindowController(
 						nativeWindow,
 						candidate.document,
@@ -164,6 +190,7 @@ export class WindowRegistry {
 	}
 
 	dispose(): void {
+		this.disposed = true;
 		for (const target of this.targets.values()) {
 			target.controller?.dispose();
 		}
@@ -186,6 +213,9 @@ export class WindowRegistry {
 	}
 
 	private emitChange(): void {
+		if (this.disposed) {
+			return;
+		}
 		for (const listener of this.listeners) {
 			listener();
 		}
