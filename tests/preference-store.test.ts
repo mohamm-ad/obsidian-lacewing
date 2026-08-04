@@ -66,6 +66,29 @@ describe("preference store", () => {
 		vi.useRealTimers();
 	});
 
+	it("migrates and removes saved preferences beneath folders", async () => {
+		const store = new PreferenceStore(
+			{
+				notePopouts: {
+					"Meetings/Call.md": { opacity: 0.8, pinned: true },
+					"Meetings/Notes.md": { opacity: 0.9, pinned: false },
+				},
+			},
+			async () => {},
+			150,
+			timerHost,
+		);
+
+		expect(store.migratePath("Meetings", "Archive/Meetings")).toBe(true);
+		expect(Object.keys(store.settings.notePopouts)).toEqual([
+			"Archive/Meetings/Call.md",
+			"Archive/Meetings/Notes.md",
+		]);
+		expect(store.removePath("Archive")).toBe(true);
+		expect(store.settings.notePopouts).toEqual({});
+		await store.flush();
+	});
+
 	it("never persists ambiguous session-only targets", () => {
 		const store = new PreferenceStore(null, async () => {}, 150, timerHost);
 		expect(

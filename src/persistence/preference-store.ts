@@ -116,12 +116,40 @@ export class PreferenceStore {
 		return true;
 	}
 
+	migratePath(oldPath: string, newPath: string): boolean {
+		let changed = false;
+		for (const path of Object.keys(this.value.notePopouts)) {
+			if (path === oldPath || path.startsWith(`${oldPath}/`)) {
+				const migratedPath = `${newPath}${path.slice(oldPath.length)}`;
+				changed =
+					migrateNotePreference(this.value, path, migratedPath) || changed;
+			}
+		}
+		if (changed) {
+			this.scheduleSave();
+		}
+		return changed;
+	}
+
 	removeNote(path: string): boolean {
 		if (!removeNotePreference(this.value, path)) {
 			return false;
 		}
 		this.scheduleSave();
 		return true;
+	}
+
+	removePath(path: string): boolean {
+		let changed = false;
+		for (const savedPath of Object.keys(this.value.notePopouts)) {
+			if (savedPath === path || savedPath.startsWith(`${path}/`)) {
+				changed = removeNotePreference(this.value, savedPath) || changed;
+			}
+		}
+		if (changed) {
+			this.scheduleSave();
+		}
+		return changed;
 	}
 
 	async flush(): Promise<void> {

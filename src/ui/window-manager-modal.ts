@@ -105,6 +105,7 @@ export class WindowManagerModal extends Modal {
 			.setDisabled(!descriptor.supported)
 			.addSlider((slider) => {
 				slider
+					.setDisabled(!descriptor.supported)
 					.setLimits(50, 100, 5)
 					.setValue(opacityPercent(current.opacity))
 					.setInstant(true)
@@ -128,7 +129,10 @@ export class WindowManagerModal extends Modal {
 			.setDesc("Keep this window above other apps on macOS.")
 			.setDisabled(!descriptor.supported)
 			.addToggle((toggle) => {
-				toggle.setValue(current.pinned).onChange((pinned) => {
+				toggle
+					.setDisabled(!descriptor.supported)
+					.setValue(current.pinned)
+					.onChange((pinned) => {
 					current = updateWindowPreference(current, { pinned });
 					this.applyFromControl(descriptor, current);
 					statusEl.setText(
@@ -137,7 +141,7 @@ export class WindowManagerModal extends Modal {
 							this.actions.isSaved(descriptor.persistence),
 						),
 					);
-				});
+					});
 			});
 
 		new Setting(card)
@@ -145,16 +149,22 @@ export class WindowManagerModal extends Modal {
 			.setDesc("Bring this window forward or return it to safe defaults.")
 			.setDisabled(!descriptor.supported)
 			.addButton((button) =>
-				button.setButtonText("Focus").onClick(() => {
-					this.registry.focus(descriptor.runtimeId);
-				}),
+				button
+					.setDisabled(!descriptor.supported)
+					.setButtonText("Focus")
+					.onClick(() => {
+						this.registry.focus(descriptor.runtimeId);
+					}),
 			)
 			.addButton((button) =>
-				button.setButtonText("Reset").onClick(() => {
-					current = resetWindowPreference();
-					this.runWithoutRefresh(() => this.actions.reset(descriptor));
-					this.render();
-				}),
+				button
+					.setDisabled(!descriptor.supported)
+					.setButtonText("Reset")
+					.onClick(() => {
+						current = resetWindowPreference();
+						this.runWithoutRefresh(() => this.actions.reset(descriptor));
+						this.render();
+					}),
 			);
 
 		if (descriptor.error) {
