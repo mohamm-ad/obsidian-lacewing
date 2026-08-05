@@ -27,6 +27,10 @@ It verifies:
 - transition clamping, easing, interruption, reduced-motion behavior,
   per-window duration overrides, native show/restore correction, asynchronous
   Electron failures, and unload cancellation
+- Contrast Shield schema migration, malformed-value rejection, global and
+  per-window resolution, renderer-marker lifecycle, exact unload restoration,
+  Markdown-only style scope, light/dark theme variants, and the absence of
+  content opacity rules
 - production bundling and manifest/version consistency
 - external Obsidian and Electron runtimes are not embedded in `main.js`
 
@@ -84,6 +88,21 @@ Overlay** in Community plugins, and reload Obsidian before testing.
 19. Trigger restore commands and disable the plugin during a transition.
     Confirm recovery is immediate and no delayed animation changes the restored
     opacity afterward.
+20. Set the global Contrast Shield to each level in turn. Confirm changes
+    preview immediately in the main window and inheriting pop-outs, while
+    **None** removes the backing surface.
+21. In both a light and dark theme, test **Subtle**, **Medium**, and **Strong**
+    in source mode, Live Preview, and Reading view. Confirm each step improves
+    separation from content behind the translucent window.
+22. Check links, text selection, embeds, images, callouts, tables, inline code,
+    fenced code blocks, and scrolling. Confirm they remain usable and that
+    sidebars and window chrome do not receive the shield.
+23. Give the main window and two single-note pop-outs different shield levels.
+    Close and reopen one pop-out and confirm its level returns. Confirm a mixed
+    pop-out is labeled session-only and does not persist after restart.
+24. Disable or reload the plugin while shields are visible. Confirm every
+    shield disappears completely; re-enable it and confirm persistent choices
+    return. Run global restore and confirm its default becomes **None**.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.

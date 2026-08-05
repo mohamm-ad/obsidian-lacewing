@@ -26,6 +26,8 @@ or macOS Space behavior.
   window or any individual pop-out.
 - Smoothly animate active and idle opacity changes with interruptible,
   reduced-motion-aware transitions.
+- Add an optional theme-aware contrast shield behind Markdown content, with
+  independent global and per-window strengths.
 - Reapply managed state after focus, show, restore, and visibility events.
 - Restore original native window state when the plugin unloads.
 
@@ -88,7 +90,26 @@ While Smart Fade is enabled, the increase/decrease opacity hotkeys adjust the
 active opacity for the current window. **Restore active window to 100%** is a
 recovery action: it disables Smart Fade for that window and restores full
 opacity. **Restore every managed overlay** disables Smart Fade globally and
-returns all managed windows to 100% and unpinned.
+Contrast Shield globally, then returns all managed windows to 100% and
+unpinned.
+
+## Contrast Shield
+
+Open **Settings → Window Overlay → Contrast shield** to choose the global
+default: **None**, **Subtle**, **Medium**, or **Strong**. Existing users remain
+on **None** after updating. The setting previews immediately in every window
+that inherits the global default.
+
+To customize one window, open the Window Manager and use its **Contrast
+shield** selector. Main-window and unambiguous single-note pop-out choices are
+saved; mixed-tab, duplicate-note, and non-note pop-outs remain session-only.
+Choose **Use global** to remove only that window's shield override.
+
+The shield adds a theme-aware backing color behind Markdown source, Live
+Preview, and Reading view content. It does not alter your theme, Obsidian's
+built-in translucency setting, sidebars, window chrome, selection, links, or
+embedded content. Because macOS applies opacity to the complete window, the
+shield improves local contrast but cannot make text fully opaque on its own.
 
 ## Safety model
 
@@ -97,6 +118,8 @@ returns all managed windows to 100% and unpinned.
   the plugin unloads.
 - Opacity transitions are interruptible and are bypassed during emergency
   restore, native show/restore correction, and plugin unload.
+- Contrast Shield uses a plugin-owned document marker and restores any prior
+  marker exactly when a window closes or the plugin unloads.
 - The plugin snapshots opacity and pin state before adopting a native window.
 - Disabling or reloading the plugin restores those original values.
 - Electron access is isolated in a guarded adapter that resolves

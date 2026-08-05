@@ -37,14 +37,25 @@ snapshot. Resolution that completes after registry disposal is ignored.
 
 No Electron object or type crosses into the UI or persistence modules.
 
+## Contrast shield boundary
+
+Each live target owns a `ContrastShieldController` for its renderer document,
+independently of native-window resolution. The controller writes one
+plugin-owned data marker to the document root. Theme-aware CSS reads that
+marker and changes only the backing color of Markdown source, Live Preview,
+and Reading view surfaces; it never changes content opacity, sidebars, or
+window chrome. The controller snapshots any pre-existing marker and restores
+it exactly on target disposal or plugin unload.
+
 ## Persistence
 
-`PreferenceStore` validates schema version 4 data at load time, safely migrates
-versions 1–3 without changing their visible behavior, and serializes
-immutable snapshots through a short debounce. Global Smart Fade defaults are
-merged with optional target overrides. The main window is stored under `main`;
-unambiguous single-note pop-outs are stored by vault-relative note path. File
-and folder rename/delete events migrate or remove affected entries.
+`PreferenceStore` validates schema version 5 data at load time, safely migrates
+versions 1–4 without changing their visible behavior, and serializes
+immutable snapshots through a short debounce. Global Smart Fade and Contrast
+Shield defaults are merged with optional target overrides. The main window is
+stored under `main`; unambiguous single-note pop-outs are stored by
+vault-relative note path. File and folder rename/delete events migrate or
+remove affected entries.
 
 The 50% floor is enforced while loading, changing, serializing, and applying a
 preference. Session-only targets can be controlled but never enter saved data.
@@ -53,8 +64,10 @@ preference. Session-only targets can be controlled but never enter saved data.
 
 The manager modal uses Obsidian `Modal`, `Setting`, slider, toggle, dropdown,
 and button components with theme variables and keyboard-native controls. Smart
-Fade uses progressive disclosure and exposes live Active/Idle state. Plugin
-settings use Obsidian 1.13's declarative, searchable settings definitions.
+Fade uses progressive disclosure and exposes live Active/Idle state. Contrast
+Shield uses a compact dropdown with explicit inheritance and a live level
+badge. Plugin settings use Obsidian 1.13's declarative, searchable settings
+definitions.
 
 Active-window commands select targets by Obsidian's `activeWindow` DOM object.
 The command service has no Electron dependency and is unit-tested separately.
