@@ -1,4 +1,4 @@
-export const SETTINGS_SCHEMA_VERSION = 2 as const;
+export const SETTINGS_SCHEMA_VERSION = 3 as const;
 export const MIN_OPACITY = 0.5;
 export const MAX_OPACITY = 1;
 export const OPACITY_STEP = 0.05;
@@ -14,11 +14,16 @@ export interface SmartFadeSettings {
 	idleOpacity: number;
 	idleDelayMs: number;
 	fadeOnBlur: boolean;
+	fadeOnInactivity: boolean;
 	brightenOnKeyboard: boolean;
 	brightenOnPointer: boolean;
 }
 
 export type SmartFadeOverrides = Partial<SmartFadeSettings>;
+export type SmartFadeTrigger =
+	| "inactivity-and-focus-loss"
+	| "focus-loss-only"
+	| "inactivity-only";
 
 export interface WindowPreference {
 	opacity: number;
@@ -45,6 +50,7 @@ export const DEFAULT_SMART_FADE_SETTINGS: Readonly<SmartFadeSettings> = {
 	idleOpacity: 0.6,
 	idleDelayMs: DEFAULT_IDLE_DELAY_MS,
 	fadeOnBlur: true,
+	fadeOnInactivity: true,
 	brightenOnKeyboard: true,
 	brightenOnPointer: true,
 };
@@ -126,6 +132,10 @@ export function normalizeSmartFadeSettings(
 			typeof record.fadeOnBlur === "boolean"
 				? record.fadeOnBlur
 				: fallback.fadeOnBlur,
+		fadeOnInactivity:
+			typeof record.fadeOnInactivity === "boolean"
+				? record.fadeOnInactivity
+				: fallback.fadeOnInactivity,
 		brightenOnKeyboard:
 			typeof record.brightenOnKeyboard === "boolean"
 				? record.brightenOnKeyboard
@@ -148,6 +158,7 @@ export function normalizeSmartFadeOverrides(
 	for (const key of [
 		"enabled",
 		"fadeOnBlur",
+		"fadeOnInactivity",
 		"brightenOnKeyboard",
 		"brightenOnPointer",
 	] as const) {
@@ -165,6 +176,26 @@ export function normalizeSmartFadeOverrides(
 	}
 
 	return Object.keys(overrides).length > 0 ? overrides : undefined;
+}
+
+export function smartFadeTrigger(
+	settings: Pick<SmartFadeSettings, "fadeOnBlur" | "fadeOnInactivity">,
+): SmartFadeTrigger {
+	if (!settings.fadeOnInactivity) {
+		return "focus-loss-only";
+	}
+	return settings.fadeOnBlur
+		? "inactivity-and-focus-loss"
+		: "inactivity-only";
+}
+
+export function smartFadeTriggerOverrides(
+	trigger: SmartFadeTrigger,
+): Pick<SmartFadeSettings, "fadeOnBlur" | "fadeOnInactivity"> {
+	return {
+		fadeOnBlur: trigger !== "inactivity-only",
+		fadeOnInactivity: trigger !== "focus-loss-only",
+	};
 }
 
 export function normalizeWindowPreference(

@@ -91,6 +91,64 @@ describe("smart fade state machine", () => {
 		expect(machine.currentState).toBe("idle");
 	});
 
+	it("stays active indefinitely in focus-loss-only mode", async () => {
+		vi.useFakeTimers();
+		const machine = new SmartFadeStateMachine(
+			settings({
+				fadeOnBlur: true,
+				fadeOnInactivity: false,
+				idleDelayMs: 250,
+			}),
+			timerHost,
+			vi.fn(),
+		);
+		machine.start(true);
+		await vi.advanceTimersByTimeAsync(10_000);
+		expect(machine.currentState).toBe("active");
+		machine.blur();
+		expect(machine.currentState).toBe("idle");
+		machine.focus();
+		expect(machine.currentState).toBe("active");
+		await vi.advanceTimersByTimeAsync(10_000);
+		expect(machine.currentState).toBe("active");
+	});
+
+	it("uses the idle timer but ignores blur in inactivity-only mode", async () => {
+		vi.useFakeTimers();
+		const machine = new SmartFadeStateMachine(
+			settings({
+				fadeOnBlur: false,
+				fadeOnInactivity: true,
+				idleDelayMs: 250,
+			}),
+			timerHost,
+			vi.fn(),
+		);
+		machine.start(true);
+		machine.blur();
+		expect(machine.currentState).toBe("active");
+		await vi.advanceTimersByTimeAsync(250);
+		expect(machine.currentState).toBe("idle");
+	});
+
+	it("brightens an idle focused window when focus-loss-only mode is selected", async () => {
+		vi.useFakeTimers();
+		const machine = new SmartFadeStateMachine(
+			settings({ idleDelayMs: 250 }),
+			timerHost,
+			vi.fn(),
+		);
+		machine.start(true);
+		await vi.advanceTimersByTimeAsync(250);
+		expect(machine.currentState).toBe("idle");
+
+		machine.update(
+			settings({ fadeOnBlur: true, fadeOnInactivity: false }),
+			true,
+		);
+		expect(machine.currentState).toBe("active");
+	});
+
 	it("disabling smart fade cancels timers and returns to active state", async () => {
 		vi.useFakeTimers();
 		const changes = vi.fn();

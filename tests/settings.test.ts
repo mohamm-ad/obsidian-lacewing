@@ -10,6 +10,8 @@ import {
 	migrateNotePreference,
 	normalizeSettings,
 	resolveSmartFadeSettings,
+	smartFadeTrigger,
+	smartFadeTriggerOverrides,
 	opacityPercent,
 	removeNotePreference,
 } from "../src/model/settings";
@@ -48,7 +50,7 @@ describe("settings normalization", () => {
 		});
 
 		expect(settings.defaultOverlayOpacity).toBe(MIN_OPACITY);
-		expect(settings.schemaVersion).toBe(2);
+		expect(settings.schemaVersion).toBe(3);
 		expect(settings.smartFadeDefaults).toEqual(DEFAULT_SMART_FADE_SETTINGS);
 		expect(settings.main).toBeNull();
 		expect(settings.notePopouts).toEqual({
@@ -64,9 +66,45 @@ describe("settings normalization", () => {
 			notePopouts: {},
 		});
 
-		expect(settings.schemaVersion).toBe(2);
+		expect(settings.schemaVersion).toBe(3);
 		expect(settings.smartFadeDefaults.enabled).toBe(false);
 		expect(settings.main).toEqual({ opacity: 0.8, pinned: true });
+	});
+
+	it("migrates schema version 2 with its existing trigger behavior", () => {
+		const settings = normalizeSettings({
+			schemaVersion: 2,
+			smartFadeDefaults: {
+				enabled: true,
+				activeOpacity: 0.9,
+				idleOpacity: 0.6,
+				idleDelayMs: 1_250,
+				fadeOnBlur: false,
+				brightenOnKeyboard: true,
+				brightenOnPointer: true,
+			},
+		});
+
+		expect(settings.schemaVersion).toBe(3);
+		expect(settings.smartFadeDefaults.fadeOnBlur).toBe(false);
+		expect(settings.smartFadeDefaults.fadeOnInactivity).toBe(true);
+		expect(smartFadeTrigger(settings.smartFadeDefaults)).toBe(
+			"inactivity-only",
+		);
+	});
+
+	it("maps each fade trigger to independent focus and inactivity flags", () => {
+		expect(
+			smartFadeTriggerOverrides("inactivity-and-focus-loss"),
+		).toEqual({ fadeOnBlur: true, fadeOnInactivity: true });
+		expect(smartFadeTriggerOverrides("focus-loss-only")).toEqual({
+			fadeOnBlur: true,
+			fadeOnInactivity: false,
+		});
+		expect(smartFadeTriggerOverrides("inactivity-only")).toEqual({
+			fadeOnBlur: false,
+			fadeOnInactivity: true,
+		});
 	});
 
 	it("validates smart fade defaults and per-window overrides", () => {

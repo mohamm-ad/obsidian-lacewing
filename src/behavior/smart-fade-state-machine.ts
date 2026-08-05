@@ -40,7 +40,11 @@ export class SmartFadeStateMachine {
 				? "idle"
 				: "active";
 		this.onStateChange(this.state);
-		if (this.settings.enabled && this.state === "active") {
+		if (
+			this.settings.enabled &&
+			this.settings.fadeOnInactivity &&
+			this.state === "active"
+		) {
 			this.scheduleIdle();
 		}
 	}
@@ -63,9 +67,12 @@ export class SmartFadeStateMachine {
 			this.onStateChange(this.state);
 			return;
 		}
+		if (focused && !settings.fadeOnInactivity && this.state === "idle") {
+			this.state = "active";
+		}
 
 		this.onStateChange(this.state);
-		if (this.state === "active") {
+		if (this.state === "active" && settings.fadeOnInactivity) {
 			this.scheduleIdle();
 		}
 	}
@@ -103,6 +110,9 @@ export class SmartFadeStateMachine {
 
 	private scheduleIdle(): void {
 		this.cancelTimer();
+		if (!this.settings.fadeOnInactivity) {
+			return;
+		}
 		this.timer = this.timerHost.setTimeout(() => {
 			this.timer = null;
 			if (this.running && this.settings.enabled) {

@@ -23,6 +23,7 @@ function descriptor(
 			idleOpacity: 0.6,
 			idleDelayMs: 1_250,
 			fadeOnBlur: true,
+			fadeOnInactivity: true,
 			brightenOnKeyboard: true,
 			brightenOnPointer: true,
 		},
