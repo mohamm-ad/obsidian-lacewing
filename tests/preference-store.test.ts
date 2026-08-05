@@ -79,6 +79,26 @@ describe("preference store", () => {
 		});
 	});
 
+	it("resolves a focus-loss-only trigger for one window", () => {
+		const store = new PreferenceStore(null, async () => {}, 100, timerHost);
+		const main = { key: "main", reason: "main" } as const;
+		store.setSmartFadeDefaults({ enabled: true });
+		store.setPreference(main, {
+			opacity: 0.8,
+			pinned: false,
+			smartFade: {
+				fadeOnBlur: true,
+				fadeOnInactivity: false,
+			},
+		});
+
+		expect(store.resolveSmartFade(main)).toMatchObject({
+			enabled: true,
+			fadeOnBlur: true,
+			fadeOnInactivity: false,
+		});
+	});
+
 	it("debounces writes and supports note migration and reset", async () => {
 		vi.useFakeTimers();
 		const save = vi.fn(async () => {});

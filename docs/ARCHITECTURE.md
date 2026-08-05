@@ -26,19 +26,21 @@ pop-out with a temporary DOM marker and a bounded retry loop.
 `NativeWindowController` snapshots native opacity and always-on-top state,
 clamps every managed opacity, uses `floating` for pinning, and delegates
 active/idle behavior to a platform-independent Smart Fade state machine.
-Keyboard and pointer activity reset its idle timer; focus, blur, show, restore,
-and visibility events reapply the correct current state. Disposal cancels the
-timer, removes every listener, and restores the snapshot. Resolution that
-completes after registry disposal is ignored.
+Keyboard navigation, pointer input, and document scrolling reset its idle
+timer. Independent inactivity and focus-loss flags produce the three supported
+trigger modes. Focus, blur, show, restore, and visibility events reapply the
+correct current state. Disposal cancels the timer, removes every listener, and
+restores the snapshot. Resolution that completes after registry disposal is
+ignored.
 
 No Electron object or type crosses into the UI or persistence modules.
 
 ## Persistence
 
-`PreferenceStore` validates schema version 2 data at load time, safely migrates
-version 1 preferences with Smart Fade disabled, and serializes immutable
-snapshots through a short debounce. Global Smart Fade defaults are merged with
-optional target overrides. The main window is stored under `main`;
+`PreferenceStore` validates schema version 3 data at load time, safely migrates
+versions 1 and 2 without changing their visible behavior, and serializes
+immutable snapshots through a short debounce. Global Smart Fade defaults are
+merged with optional target overrides. The main window is stored under `main`;
 unambiguous single-note pop-outs are stored by vault-relative note path. File
 and folder rename/delete events migrate or remove affected entries.
 

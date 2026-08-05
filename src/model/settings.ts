@@ -129,6 +129,14 @@ export function normalizeSmartFadeSettings(
 		activeOpacity,
 		clampOpacity(record.idleOpacity, fallback.idleOpacity),
 	);
+	const fadeOnInactivity =
+		typeof record.fadeOnInactivity === "boolean"
+			? record.fadeOnInactivity
+			: fallback.fadeOnInactivity;
+	const requestedFadeOnBlur =
+		typeof record.fadeOnBlur === "boolean"
+			? record.fadeOnBlur
+			: fallback.fadeOnBlur;
 
 	return {
 		enabled:
@@ -136,14 +144,8 @@ export function normalizeSmartFadeSettings(
 		activeOpacity,
 		idleOpacity,
 		idleDelayMs: clampIdleDelay(record.idleDelayMs, fallback.idleDelayMs),
-		fadeOnBlur:
-			typeof record.fadeOnBlur === "boolean"
-				? record.fadeOnBlur
-				: fallback.fadeOnBlur,
-		fadeOnInactivity:
-			typeof record.fadeOnInactivity === "boolean"
-				? record.fadeOnInactivity
-				: fallback.fadeOnInactivity,
+		fadeOnBlur: requestedFadeOnBlur || !fadeOnInactivity,
+		fadeOnInactivity,
 		brightenOnKeyboard:
 			typeof record.brightenOnKeyboard === "boolean"
 				? record.brightenOnKeyboard

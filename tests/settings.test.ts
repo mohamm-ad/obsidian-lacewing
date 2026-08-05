@@ -107,6 +107,23 @@ describe("settings normalization", () => {
 		});
 	});
 
+	it("repairs settings that would otherwise never fade", () => {
+		const settings = normalizeSettings({
+			smartFadeDefaults: {
+				...DEFAULT_SMART_FADE_SETTINGS,
+				enabled: true,
+				fadeOnBlur: false,
+				fadeOnInactivity: false,
+			},
+		});
+
+		expect(settings.smartFadeDefaults.fadeOnBlur).toBe(true);
+		expect(settings.smartFadeDefaults.fadeOnInactivity).toBe(false);
+		expect(smartFadeTrigger(settings.smartFadeDefaults)).toBe(
+			"focus-loss-only",
+		);
+	});
+
 	it("validates smart fade defaults and per-window overrides", () => {
 		const settings = normalizeSettings({
 			smartFadeDefaults: {

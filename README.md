@@ -55,8 +55,21 @@ Overlay.”
 ## Smart Fade
 
 Open **Settings → Window Overlay → Smart fade** to enable the behavior and set
-the active opacity, idle opacity, delay, and activity triggers. Existing users
-remain on fixed opacity until they enable it.
+the active opacity, idle opacity, fade trigger, delay, and activity controls.
+Existing users remain on fixed opacity until they enable it.
+
+The fade trigger offers three modes:
+
+- **Inactivity and focus loss** fades after the idle delay or immediately when
+  focus moves elsewhere. This is the default and preserves earlier behavior.
+- **Focus loss only** keeps a focused window bright indefinitely, which is
+  useful for reading, then fades when you switch back to another app.
+- **Inactivity only** uses the idle timer but does not fade immediately when
+  focus moves elsewhere.
+
+Typing, arrow and paging keys, clicks, and scrolling with a mouse, trackpad, or
+scrollbar can all reset the inactivity timer when their activity controls are
+enabled.
 
 In the Window Manager, expand **Smart fade** on any window to inherit the
 global setting or customize that window. The live badge shows whether the

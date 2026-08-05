@@ -21,8 +21,9 @@ It verifies:
 - manager view-model and active-window command targeting
 - overlay duplicate tracking
 - Smart Fade migration, clamping, active/idle timing, activity triggers,
-  focus/blur behavior, timer replacement, per-window overrides, session-only
-  behavior, pin preservation, and unload restoration
+  all three fade-trigger modes, reading navigation and scrolling, focus/blur
+  behavior, timer replacement, per-window overrides, session-only behavior,
+  pin preservation, and unload restoration
 - production bundling and manifest/version consistency
 - external Obsidian and Electron runtimes are not embedded in `main.js`
 
@@ -63,6 +64,12 @@ Overlay** in Community plugins, and reload Obsidian before testing.
 13. Run the active-window restore command while Smart Fade is on. Confirm that
     window returns to 100% and Smart Fade is off for it. Run global restore and
     confirm Smart Fade is disabled globally.
+14. Select **Focus loss only** and leave the Obsidian window focused without
+    interacting past the idle delay. Confirm it remains at active opacity, then
+    switches to idle opacity when another app receives focus.
+15. Select a trigger that includes inactivity. Confirm arrow keys, Page Up or
+    Down, space, mouse or trackpad scrolling, and dragging the scrollbar reset
+    the idle timer when their corresponding activity controls are enabled.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.
