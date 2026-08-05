@@ -117,6 +117,10 @@ export class NativeWindowController {
 		return this.smartFade.currentState;
 	}
 
+	get smartFadeConfiguration(): SmartFadeSettings {
+		return { ...this.smartFadeSettings };
+	}
+
 	get effectiveOpacity(): number {
 		return this.smartFade.enabled
 			? this.smartFade.currentOpacity

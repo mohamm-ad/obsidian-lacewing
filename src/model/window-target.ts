@@ -1,4 +1,9 @@
-import { MAIN_WINDOW_KEY, type WindowPreference } from "./settings";
+import {
+	MAIN_WINDOW_KEY,
+	type SmartFadeSettings,
+	type WindowPreference,
+} from "./settings";
+import type { SmartFadeState } from "../behavior/smart-fade-state-machine";
 
 export type WindowTargetKind = "main" | "popout";
 
@@ -24,6 +29,9 @@ export interface WindowTargetDescriptor {
 	focused: boolean;
 	persistence: PersistenceIdentity;
 	preference: WindowPreference;
+	smartFade: SmartFadeSettings;
+	smartFadeState: SmartFadeState;
+	effectiveOpacity: number;
 	supported: boolean;
 	error: string | null;
 }

@@ -8,7 +8,6 @@ import type { WindowTargetDescriptor } from "../model/window-target";
 
 export interface CommandWindowRegistry {
 	getTargetForWindow(domWindow: Window): WindowTargetDescriptor | null;
-	setPreference(runtimeId: string, preference: WindowPreference): boolean;
 }
 
 export type CommandResult =
@@ -19,43 +18,67 @@ export type CommandResult =
 export class ActiveWindowCommands {
 	constructor(
 		private readonly registry: CommandWindowRegistry,
-		private readonly persist: (
+		private readonly apply: (
 			descriptor: WindowTargetDescriptor,
 			preference: WindowPreference,
-		) => void,
+		) => boolean,
 	) {}
 
 	increaseOpacity(domWindow: Window): CommandResult {
-		return this.update(domWindow, (current) => ({
-			...current,
-			opacity: adjustOpacity(current.opacity, OPACITY_STEP),
-		}));
+		return this.updateOpacity(domWindow, OPACITY_STEP);
 	}
 
 	decreaseOpacity(domWindow: Window): CommandResult {
-		return this.update(domWindow, (current) => ({
-			...current,
-			opacity: adjustOpacity(current.opacity, -OPACITY_STEP),
-		}));
+		return this.updateOpacity(domWindow, -OPACITY_STEP);
 	}
 
 	togglePinning(domWindow: Window): CommandResult {
-		return this.update(domWindow, (current) => ({
-			...current,
-			pinned: !current.pinned,
+		return this.update(domWindow, (descriptor) => ({
+			...descriptor.preference,
+			pinned: !descriptor.preference.pinned,
 		}));
 	}
 
 	restoreOpacity(domWindow: Window): CommandResult {
-		return this.update(domWindow, (current) => ({
-			...current,
+		return this.update(domWindow, (descriptor) => ({
+			...descriptor.preference,
+			...(descriptor.smartFade.enabled
+				? {
+						smartFade: {
+							...descriptor.preference.smartFade,
+							enabled: false,
+						},
+					}
+				: {}),
 			opacity: MAX_OPACITY,
 		}));
 	}
 
+	private updateOpacity(domWindow: Window, delta: number): CommandResult {
+		return this.update(domWindow, (descriptor) => {
+			const current = descriptor.preference;
+			if (descriptor.smartFade.enabled) {
+				return {
+					...current,
+					smartFade: {
+						...current.smartFade,
+						activeOpacity: adjustOpacity(
+							descriptor.smartFade.activeOpacity,
+							delta,
+						),
+					},
+				};
+			}
+			return {
+			...current,
+				opacity: adjustOpacity(current.opacity, delta),
+			};
+		});
+	}
+
 	private update(
 		domWindow: Window,
-		transform: (current: WindowPreference) => WindowPreference,
+		transform: (descriptor: WindowTargetDescriptor) => WindowPreference,
 	): CommandResult {
 		const descriptor = this.registry.getTargetForWindow(domWindow);
 		if (!descriptor) {
@@ -65,11 +88,10 @@ export class ActiveWindowCommands {
 			return { status: "unsupported", descriptor };
 		}
 
-		const preference = transform(descriptor.preference);
-		if (!this.registry.setPreference(descriptor.runtimeId, preference)) {
+		const preference = transform(descriptor);
+		if (!this.apply(descriptor, preference)) {
 			return { status: "unsupported", descriptor };
 		}
-		this.persist(descriptor, preference);
 		return { status: "applied", descriptor };
 	}
 }

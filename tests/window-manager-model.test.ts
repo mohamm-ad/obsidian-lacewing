@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	clearSmartFadeOverrides,
 	persistenceLabel,
 	resetWindowPreference,
+	updateSmartFadeOverrides,
 	updateWindowPreference,
 } from "../src/ui/window-manager-model";
 
@@ -14,6 +16,28 @@ describe("window manager model", () => {
 			),
 		).toEqual({ opacity: 0.5, pinned: true });
 		expect(resetWindowPreference()).toEqual({ opacity: 1, pinned: false });
+	});
+
+	it("updates and clears smart fade overrides without losing window controls", () => {
+		const current = {
+			opacity: 0.8,
+			pinned: true,
+			smartFade: { enabled: true, idleOpacity: 0.6 },
+		};
+		const updated = updateSmartFadeOverrides(current, {
+			enabled: undefined,
+			activeOpacity: 0.9,
+		});
+
+		expect(updated).toEqual({
+			opacity: 0.8,
+			pinned: true,
+			smartFade: { idleOpacity: 0.6, activeOpacity: 0.9 },
+		});
+		expect(clearSmartFadeOverrides(updated)).toEqual({
+			opacity: 0.8,
+			pinned: true,
+		});
 	});
 
 	it("explains saved and session-only behavior", () => {

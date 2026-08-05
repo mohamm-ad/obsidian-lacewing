@@ -85,6 +85,13 @@ export class WindowRegistry {
 		return applied;
 	}
 
+	setSmartFade(runtimeId: string, settings: SmartFadeSettings): boolean {
+		const applied =
+			this.targets.get(runtimeId)?.controller?.setSmartFade(settings) ?? false;
+		this.emitChange();
+		return applied;
+	}
+
 	focus(runtimeId: string): boolean {
 		const controller = this.targets.get(runtimeId)?.controller;
 		if (!controller) {
@@ -234,6 +241,9 @@ export class WindowRegistry {
 
 	private toDescriptor(target: ManagedWindowTarget): WindowTargetDescriptor {
 		const controller = target.controller;
+		const smartFade =
+			controller?.smartFadeConfiguration ??
+			this.resolveSmartFade(target.persistence);
 		return {
 			runtimeId: target.candidate.runtimeId,
 			kind: target.candidate.kind,
@@ -241,6 +251,10 @@ export class WindowRegistry {
 			focused: controller?.isFocused ?? false,
 			persistence: target.persistence,
 			preference: controller?.preference ?? { ...DEFAULT_WINDOW_PREFERENCE },
+			smartFade,
+			smartFadeState: controller?.smartFadeState ?? "active",
+			effectiveOpacity:
+				controller?.effectiveOpacity ?? DEFAULT_WINDOW_PREFERENCE.opacity,
 			supported: controller !== null,
 			error: controller?.lastError ?? target.error,
 		};

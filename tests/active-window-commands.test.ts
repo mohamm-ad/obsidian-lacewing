@@ -4,7 +4,11 @@ import type { WindowTargetDescriptor } from "../src/model/window-target";
 
 function descriptor(
 	runtimeId: string,
-	preference = { opacity: 0.8, pinned: false },
+	preference: WindowTargetDescriptor["preference"] = {
+		opacity: 0.8,
+		pinned: false,
+	},
+	smartFadeEnabled = false,
 ): WindowTargetDescriptor {
 	return {
 		runtimeId,
@@ -13,6 +17,17 @@ function descriptor(
 		focused: true,
 		persistence: { key: `note:${runtimeId}.md`, reason: "single-note" },
 		preference,
+		smartFade: {
+			enabled: smartFadeEnabled,
+			activeOpacity: 0.9,
+			idleOpacity: 0.6,
+			idleDelayMs: 1_250,
+			fadeOnBlur: true,
+			brightenOnKeyboard: true,
+			brightenOnPointer: true,
+		},
+		smartFadeState: "active",
+		effectiveOpacity: smartFadeEnabled ? 0.9 : preference.opacity,
 		supported: true,
 		error: null,
 	};
@@ -24,56 +39,97 @@ describe("active window commands", () => {
 		const popoutWindow = {} as Window;
 		const main = descriptor("main");
 		const popout = descriptor("popout", { opacity: 0.55, pinned: true });
-		const setPreference = vi.fn(() => true);
-		const persist = vi.fn();
+		const apply = vi.fn(() => true);
 		const commands = new ActiveWindowCommands(
 			{
 				getTargetForWindow: (domWindow) =>
 					domWindow === mainWindow ? main : popout,
-				setPreference,
 			},
-			persist,
+			apply,
 		);
 
 		expect(commands.decreaseOpacity(popoutWindow).status).toBe("applied");
-		expect(setPreference).toHaveBeenCalledWith("popout", {
+		expect(apply).toHaveBeenCalledWith(popout, {
 			opacity: 0.5,
 			pinned: true,
 		});
-		expect(persist).toHaveBeenCalledOnce();
 	});
 
 	it("preserves pinning when restoring opacity", () => {
 		const active = {} as Window;
 		const target = descriptor("call", { opacity: 0.65, pinned: true });
-		const setPreference = vi.fn(() => true);
+		const apply = vi.fn(() => true);
 		const commands = new ActiveWindowCommands(
 			{
 				getTargetForWindow: () => target,
-				setPreference,
 			},
-			vi.fn(),
+			apply,
 		);
 
 		commands.restoreOpacity(active);
-		expect(setPreference).toHaveBeenCalledWith("call", {
+		expect(apply).toHaveBeenCalledWith(target, {
 			opacity: 1,
 			pinned: true,
 		});
 	});
 
+	it("adjusts active opacity while smart fade is enabled", () => {
+		const active = {} as Window;
+		const target = descriptor(
+			"call",
+			{ opacity: 0.75, pinned: true },
+			true,
+		);
+		const apply = vi.fn(() => true);
+		const commands = new ActiveWindowCommands(
+			{ getTargetForWindow: () => target },
+			apply,
+		);
+
+		commands.decreaseOpacity(active);
+		expect(apply).toHaveBeenCalledWith(target, {
+			opacity: 0.75,
+			pinned: true,
+			smartFade: { activeOpacity: 0.85 },
+		});
+	});
+
+	it("disables smart fade when restoring the active window", () => {
+		const active = {} as Window;
+		const target = descriptor(
+			"call",
+			{
+				opacity: 0.7,
+				pinned: false,
+				smartFade: { idleOpacity: 0.55 },
+			},
+			true,
+		);
+		const apply = vi.fn(() => true);
+		const commands = new ActiveWindowCommands(
+			{ getTargetForWindow: () => target },
+			apply,
+		);
+
+		commands.restoreOpacity(active);
+		expect(apply).toHaveBeenCalledWith(target, {
+			opacity: 1,
+			pinned: false,
+			smartFade: { idleOpacity: 0.55, enabled: false },
+		});
+	});
+
 	it("does not persist missing or unsupported targets", () => {
 		const active = {} as Window;
-		const persist = vi.fn();
+		const apply = vi.fn(() => false);
 		const commands = new ActiveWindowCommands(
 			{
 				getTargetForWindow: () => null,
-				setPreference: vi.fn(() => false),
 			},
-			persist,
+			apply,
 		);
 
 		expect(commands.togglePinning(active).status).toBe("no-target");
-		expect(persist).not.toHaveBeenCalled();
+		expect(apply).not.toHaveBeenCalled();
 	});
 });

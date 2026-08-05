@@ -1,6 +1,8 @@
 import {
 	DEFAULT_WINDOW_PREFERENCE,
 	clampOpacity,
+	cloneWindowPreference,
+	type SmartFadeOverrides,
 	type WindowPreference,
 } from "../model/settings";
 import type { PersistenceIdentity } from "../model/window-target";
@@ -19,6 +21,38 @@ export function updateWindowPreference(
 
 export function resetWindowPreference(): WindowPreference {
 	return { ...DEFAULT_WINDOW_PREFERENCE };
+}
+
+export function updateSmartFadeOverrides(
+	current: WindowPreference,
+	patch: SmartFadeOverrides,
+): WindowPreference {
+	const preference = cloneWindowPreference(current);
+	const overrides: SmartFadeOverrides = { ...preference.smartFade };
+	for (const [key, value] of Object.entries(patch) as Array<
+		[keyof SmartFadeOverrides, SmartFadeOverrides[keyof SmartFadeOverrides]]
+	>) {
+		if (value === undefined) {
+			delete overrides[key];
+		} else {
+			Object.assign(overrides, { [key]: value });
+		}
+	}
+
+	if (Object.keys(overrides).length > 0) {
+		preference.smartFade = overrides;
+	} else {
+		delete preference.smartFade;
+	}
+	return preference;
+}
+
+export function clearSmartFadeOverrides(
+	current: WindowPreference,
+): WindowPreference {
+	const preference = cloneWindowPreference(current);
+	delete preference.smartFade;
+	return preference;
 }
 
 export function persistenceLabel(

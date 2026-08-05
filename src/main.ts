@@ -10,6 +10,8 @@ import {
 } from "./commands/active-window-commands";
 import { DEFAULT_HOTKEYS } from "./commands/default-hotkeys";
 import {
+	normalizeWindowPreference,
+	resolveSmartFadeSettings,
 	type SmartFadeSettings,
 	type WindowOverlaySettings,
 	type WindowPreference,
@@ -73,9 +75,8 @@ export default class WindowOverlayPlugin extends Plugin {
 		);
 		this.activeCommands = new ActiveWindowCommands(
 			this.registry,
-			(descriptor, preference) => {
-				this.store?.setPreference(descriptor.persistence, preference);
-			},
+			(descriptor, preference) =>
+				this.setWindowPreference(descriptor, preference),
 		);
 		const scheduleSync = (): void => {
 			void this.scheduleWindowSync();
@@ -291,18 +292,30 @@ export default class WindowOverlayPlugin extends Plugin {
 		descriptor: WindowTargetDescriptor,
 		preference: WindowPreference,
 	): boolean {
-		if (!this.registry?.setPreference(descriptor.runtimeId, preference)) {
+		const normalized = normalizeWindowPreference(preference);
+		if (!this.registry?.setPreference(descriptor.runtimeId, normalized)) {
 			return false;
 		}
-		this.store?.setPreference(descriptor.persistence, preference);
+		this.store?.setPreference(descriptor.persistence, normalized);
+		const defaults = this.currentSettings.smartFadeDefaults;
+		this.registry.setSmartFade(
+			descriptor.runtimeId,
+			resolveSmartFadeSettings(defaults, normalized),
+		);
 		return true;
 	}
 
 	private resetWindow(descriptor: WindowTargetDescriptor): void {
+		this.store?.reset(descriptor.persistence);
 		this.registry?.setPreference(
 			descriptor.runtimeId,
 			defaultWindowPreference(),
 		);
-		this.store?.reset(descriptor.persistence);
+		if (this.store) {
+			this.registry?.setSmartFade(
+				descriptor.runtimeId,
+				this.store.resolveSmartFade(descriptor.persistence),
+			);
+		}
 	}
 }
