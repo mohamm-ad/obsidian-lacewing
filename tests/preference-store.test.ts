@@ -68,6 +68,16 @@ describe("preference store", () => {
 		expect(save).toHaveBeenCalledOnce();
 	});
 
+	it("keeps idle opacity at or below the active opacity", () => {
+		const store = new PreferenceStore(null, async () => {}, 100, timerHost);
+		store.setSmartFadeDefaults({ idleOpacity: 0.9, activeOpacity: 0.7 });
+
+		expect(store.settings.smartFadeDefaults).toMatchObject({
+			activeOpacity: 0.7,
+			idleOpacity: 0.7,
+		});
+	});
+
 	it("debounces writes and supports note migration and reset", async () => {
 		vi.useFakeTimers();
 		const save = vi.fn(async () => {});

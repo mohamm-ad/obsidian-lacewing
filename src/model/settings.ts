@@ -137,7 +137,9 @@ export function normalizeSmartFadeSettings(
 	};
 }
 
-function normalizeSmartFadeOverrides(value: unknown): SmartFadeOverrides | undefined {
+export function normalizeSmartFadeOverrides(
+	value: unknown,
+): SmartFadeOverrides | undefined {
 	if (!isRecord(value)) {
 		return undefined;
 	}
@@ -201,9 +203,10 @@ export function resolveSmartFadeSettings(
 	defaults: Readonly<SmartFadeSettings>,
 	preference: Readonly<WindowPreference> | null,
 ): SmartFadeSettings {
+	const overrides = normalizeSmartFadeOverrides(preference?.smartFade) ?? {};
 	return normalizeSmartFadeSettings({
 		...defaults,
-		...(preference?.smartFade ?? {}),
+		...overrides,
 	});
 }
 

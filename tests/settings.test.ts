@@ -99,6 +99,24 @@ describe("settings normalization", () => {
 		});
 	});
 
+	it("ignores undefined smart fade overrides instead of replacing defaults", () => {
+		const resolved = resolveSmartFadeSettings(
+			{
+				...DEFAULT_SMART_FADE_SETTINGS,
+				enabled: true,
+				activeOpacity: 0.88,
+			},
+			{
+				opacity: 1,
+				pinned: false,
+				smartFade: { enabled: undefined, activeOpacity: undefined },
+			},
+		);
+
+		expect(resolved.enabled).toBe(true);
+		expect(resolved.activeOpacity).toBe(0.88);
+	});
+
 	it("migrates and removes note preferences", () => {
 		const settings = normalizeSettings({
 			notePopouts: {

@@ -10,6 +10,7 @@ import {
 } from "./commands/active-window-commands";
 import { DEFAULT_HOTKEYS } from "./commands/default-hotkeys";
 import {
+	type SmartFadeSettings,
 	type WindowOverlaySettings,
 	type WindowPreference,
 } from "./model/settings";
@@ -194,9 +195,15 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.store?.setDefaultOverlayOpacity(opacity);
 	}
 
+	setSmartFadeDefaults(patch: Partial<SmartFadeSettings>): void {
+		this.store?.setSmartFadeDefaults(patch);
+		this.registry?.refreshSmartFade();
+	}
+
 	restoreAllWindows(): void {
-		this.registry?.restoreAll();
+		this.store?.setSmartFadeDefaults({ enabled: false });
 		this.store?.resetAll();
+		this.registry?.restoreAll();
 		new Notice("Restored every managed overlay.");
 	}
 

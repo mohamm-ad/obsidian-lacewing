@@ -145,6 +145,33 @@ describe("window registry", () => {
 		expect(nativeWindow.opacity).toBe(1);
 	});
 
+	it("refreshes smart fade after global defaults change", async () => {
+		const nativeWindow = new RegistryNativeWindow(6);
+		const adapter = {
+			resolve: vi.fn(async () => nativeWindow),
+		} as unknown as ElectronWindowAdapter;
+		let idleOpacity = 0.65;
+		const registry = new WindowRegistry(
+			adapter,
+			() => null,
+			() => ({
+				enabled: true,
+				activeOpacity: 0.9,
+				idleOpacity,
+				idleDelayMs: 1_000,
+				fadeOnBlur: true,
+				brightenOnKeyboard: true,
+				brightenOnPointer: true,
+			}),
+		);
+
+		await registry.sync([candidate("main", "main", [])]);
+		expect(nativeWindow.opacity).toBe(0.65);
+		idleOpacity = 0.55;
+		registry.refreshSmartFade();
+		expect(nativeWindow.opacity).toBe(0.55);
+	});
+
 	it("does not adopt a window when resolution finishes after disposal", async () => {
 		const nativeWindow = new RegistryNativeWindow(4);
 		let finishResolution!: (value: NativeBrowserWindow) => void;
