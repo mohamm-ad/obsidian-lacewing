@@ -25,6 +25,14 @@ export type SmartFadeTrigger =
 	| "focus-loss-only"
 	| "inactivity-only";
 
+export function isSmartFadeTrigger(value: unknown): value is SmartFadeTrigger {
+	return (
+		value === "inactivity-and-focus-loss" ||
+		value === "focus-loss-only" ||
+		value === "inactivity-only"
+	);
+}
+
 export interface WindowPreference {
 	opacity: number;
 	pinned: boolean;

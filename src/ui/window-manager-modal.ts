@@ -2,7 +2,10 @@ import { Modal, Notice, Setting } from "obsidian";
 import type { App } from "obsidian";
 import {
 	cloneWindowPreference,
+	isSmartFadeTrigger,
 	opacityPercent,
+	smartFadeTrigger,
+	smartFadeTriggerOverrides,
 	type SmartFadeOverrides,
 	type SmartFadeSettings,
 	type WindowPreference,
@@ -248,8 +251,8 @@ export class WindowManagerModal extends Modal {
 
 		const mode = getCurrent().smartFade?.enabled;
 		new Setting(body)
-			.setName("Behavior")
-			.setDesc("Follow the global setting or choose a value for this window.")
+			.setName("Smart fade")
+			.setDesc("Follow the global on/off setting or choose one for this window.")
 			.setDisabled(!descriptor.supported)
 			.addDropdown((dropdown) => {
 				dropdown
@@ -276,7 +279,7 @@ export class WindowManagerModal extends Modal {
 			this.renderSmartFadeOpacity(
 				body,
 				"Active opacity",
-				"Opacity while typing or clicking in this window.",
+				"Readable opacity while using or reading this window.",
 				effective.activeOpacity,
 				opacityPercent(effective.idleOpacity),
 				100,
@@ -286,7 +289,7 @@ export class WindowManagerModal extends Modal {
 			this.renderSmartFadeOpacity(
 				body,
 				"Idle opacity",
-				"Opacity after this window has been inactive.",
+				"See-through opacity used when the selected trigger fades this window.",
 				effective.idleOpacity,
 				50,
 				opacityPercent(effective.activeOpacity),
@@ -295,43 +298,59 @@ export class WindowManagerModal extends Modal {
 			);
 
 			new Setting(body)
-				.setName("Idle delay")
-				.setDesc("How long to wait after activity before fading.")
+				.setName("Fade trigger")
+				.setDesc("Focus loss only keeps this window bright while you read it.")
 				.setDisabled(!descriptor.supported)
-				.addSlider((slider) => {
-					slider
+				.addDropdown((dropdown) => {
+					dropdown
 						.setDisabled(!descriptor.supported)
-						.setLimits(250, 10_000, 250)
-						.setValue(effective.idleDelayMs)
-						.setInstant(true)
-						.setDisplayFormat((value) => this.formatDelay(value))
-						.onChange((value) => applyPatch({ idleDelayMs: value }));
+						.addOptions({
+							"inactivity-and-focus-loss": "Inactivity and focus loss",
+							"focus-loss-only": "Focus loss only",
+							"inactivity-only": "Inactivity only",
+						})
+						.setValue(smartFadeTrigger(effective))
+						.onChange((value) => {
+							if (isSmartFadeTrigger(value)) {
+								applyPatch(smartFadeTriggerOverrides(value));
+								this.openSmartFade.add(descriptor.runtimeId);
+								this.render();
+							}
+						});
 				});
 
-			this.renderSmartFadeToggle(
-				body,
-				"Fade when focus leaves Obsidian",
-				"Fade immediately when switching elsewhere.",
-				effective.fadeOnBlur,
-				(value) => applyPatch({ fadeOnBlur: value }),
-				descriptor.supported,
-			);
-			this.renderSmartFadeToggle(
-				body,
-				"Brighten on keyboard activity",
-				"Return to active opacity when you type.",
-				effective.brightenOnKeyboard,
-				(value) => applyPatch({ brightenOnKeyboard: value }),
-				descriptor.supported,
-			);
-			this.renderSmartFadeToggle(
-				body,
-				"Brighten on pointer activity",
-				"Return to active opacity when you click.",
-				effective.brightenOnPointer,
-				(value) => applyPatch({ brightenOnPointer: value }),
-				descriptor.supported,
-			);
+			if (effective.fadeOnInactivity) {
+				new Setting(body)
+					.setName("Idle delay")
+					.setDesc("How long to wait after the last reading or editing activity.")
+					.setDisabled(!descriptor.supported)
+					.addSlider((slider) => {
+						slider
+							.setDisabled(!descriptor.supported)
+							.setLimits(250, 10_000, 250)
+							.setValue(effective.idleDelayMs)
+							.setInstant(true)
+							.setDisplayFormat((value) => this.formatDelay(value))
+							.onChange((value) => applyPatch({ idleDelayMs: value }));
+					});
+
+				this.renderSmartFadeToggle(
+					body,
+					"Brighten on keyboard activity",
+					"Typing and navigation keys, including arrows and Page Up or Down, count as activity.",
+					effective.brightenOnKeyboard,
+					(value) => applyPatch({ brightenOnKeyboard: value }),
+					descriptor.supported,
+				);
+				this.renderSmartFadeToggle(
+					body,
+					"Brighten on pointer and scroll activity",
+					"Clicking or scrolling with a mouse, trackpad, or scrollbar counts as activity.",
+					effective.brightenOnPointer,
+					(value) => applyPatch({ brightenOnPointer: value }),
+					descriptor.supported,
+				);
+			}
 		}
 
 		new Setting(body)

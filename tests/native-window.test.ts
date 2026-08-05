@@ -202,6 +202,40 @@ describe("native window controller", () => {
 
 		document.dispatchEvent(new Event("keydown"));
 		document.dispatchEvent(new Event("pointerdown"));
+		document.dispatchEvent(new Event("wheel"));
+		document.dispatchEvent(new Event("scroll"));
+		expect(nativeWindow.opacity).toBe(0.6);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("treats reading navigation and scrolling as activity", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(10);
+		nativeWindow.focused = true;
+		const document = fakeDocument();
+		const controller = new NativeWindowController(
+			nativeWindow,
+			document,
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			idleDelayMs: 250,
+		});
+		await vi.advanceTimersByTimeAsync(250);
+		expect(nativeWindow.opacity).toBe(0.6);
+
+		document.dispatchEvent(new Event("scroll"));
+		expect(nativeWindow.opacity).toBe(0.92);
+		await vi.advanceTimersByTimeAsync(249);
+		expect(nativeWindow.opacity).toBe(0.92);
+		document.dispatchEvent(new Event("keydown"));
+		await vi.advanceTimersByTimeAsync(249);
+		expect(nativeWindow.opacity).toBe(0.92);
+		await vi.advanceTimersByTimeAsync(1);
 		expect(nativeWindow.opacity).toBe(0.6);
 		controller.dispose();
 		vi.useRealTimers();

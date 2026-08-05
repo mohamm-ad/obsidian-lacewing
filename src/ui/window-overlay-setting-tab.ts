@@ -1,6 +1,11 @@
 import { PluginSettingTab } from "obsidian";
 import type { App, SettingDefinitionItem } from "obsidian";
-import { opacityPercent } from "../model/settings";
+import {
+	isSmartFadeTrigger,
+	opacityPercent,
+	smartFadeTrigger,
+	smartFadeTriggerOverrides,
+} from "../model/settings";
 import type { SmartFadeSettings } from "../model/settings";
 import type WindowOverlayPlugin from "../main";
 
@@ -9,7 +14,7 @@ const SMART_FADE_ENABLED_KEY = "smartFadeEnabled";
 const SMART_FADE_ACTIVE_OPACITY_KEY = "smartFadeActiveOpacity";
 const SMART_FADE_IDLE_OPACITY_KEY = "smartFadeIdleOpacity";
 const SMART_FADE_IDLE_DELAY_KEY = "smartFadeIdleDelay";
-const SMART_FADE_ON_BLUR_KEY = "smartFadeOnBlur";
+const SMART_FADE_TRIGGER_KEY = "smartFadeTrigger";
 const SMART_FADE_ON_KEYBOARD_KEY = "smartFadeOnKeyboard";
 const SMART_FADE_ON_POINTER_KEY = "smartFadeOnPointer";
 
@@ -49,7 +54,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 				items: [
 					{
 						name: "Enable smart fade",
-						desc: "Keep the active window readable, then fade it after a short pause.",
+						desc: "Switch between readable active opacity and see-through idle opacity using the selected trigger.",
 						control: {
 							type: "toggle",
 							key: SMART_FADE_ENABLED_KEY,
@@ -57,45 +62,58 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					},
 					{
 						name: "Active opacity",
-						desc: "Opacity while typing, clicking, or actively using the window.",
+						desc: "Opacity while the window is active. Typing, navigation, clicking, and scrolling can return it here.",
 						control: this.smartFadeOpacitySlider(
 							SMART_FADE_ACTIVE_OPACITY_KEY,
 						),
 					},
 					{
 						name: "Idle opacity",
-						desc: "Opacity after the window has been inactive for the idle delay.",
+						desc: "Opacity used when the selected trigger fades the window.",
 						control: this.smartFadeOpacitySlider(
 							SMART_FADE_IDLE_OPACITY_KEY,
 						),
 					},
 					{
+						name: "Fade trigger",
+						desc: "Choose when to fade. Focus loss only keeps a focused window bright for uninterrupted reading.",
+						control: {
+							type: "dropdown",
+							key: SMART_FADE_TRIGGER_KEY,
+							options: {
+								"inactivity-and-focus-loss": "Inactivity and focus loss",
+								"focus-loss-only": "Focus loss only",
+								"inactivity-only": "Inactivity only",
+							},
+							disabled: () => !this.smartFadeDefaults.enabled,
+						},
+					},
+					{
 						name: "Idle delay",
-						desc: "How long to wait after activity before fading the window.",
+						desc: "How long to wait after activity. Used only when the trigger includes inactivity.",
 						control: {
 							type: "slider",
 							key: SMART_FADE_IDLE_DELAY_KEY,
 							min: 250,
 							max: 10_000,
 							step: 250,
-							disabled: () => !this.smartFadeDefaults.enabled,
+							disabled: () => !this.usesInactivity,
 							displayFormat: (value) => this.formatDelay(value),
 						},
 					},
 					{
-						name: "Fade when focus leaves Obsidian",
-						desc: "Fade immediately when switching to another app or window.",
-						control: this.smartFadeToggle(SMART_FADE_ON_BLUR_KEY),
-					},
-					{
 						name: "Brighten on keyboard activity",
-						desc: "Return to active opacity as soon as you type.",
-						control: this.smartFadeToggle(SMART_FADE_ON_KEYBOARD_KEY),
+						desc: "Typing and navigation keys, including arrows and Page Up or Down, return the window to active opacity.",
+						control: this.smartFadeActivityToggle(
+							SMART_FADE_ON_KEYBOARD_KEY,
+						),
 					},
 					{
-						name: "Brighten on pointer activity",
-						desc: "Return to active opacity when you click inside the window.",
-						control: this.smartFadeToggle(SMART_FADE_ON_POINTER_KEY),
+						name: "Brighten on pointer and scroll activity",
+						desc: "Clicking or scrolling with a mouse, trackpad, or scrollbar returns the window to active opacity.",
+						control: this.smartFadeActivityToggle(
+							SMART_FADE_ON_POINTER_KEY,
+						),
 					},
 				],
 			},
@@ -129,8 +147,8 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 				return opacityPercent(smartFade.idleOpacity);
 			case SMART_FADE_IDLE_DELAY_KEY:
 				return smartFade.idleDelayMs;
-			case SMART_FADE_ON_BLUR_KEY:
-				return smartFade.fadeOnBlur;
+			case SMART_FADE_TRIGGER_KEY:
+				return smartFadeTrigger(smartFade);
 			case SMART_FADE_ON_KEYBOARD_KEY:
 				return smartFade.brightenOnKeyboard;
 			case SMART_FADE_ON_POINTER_KEY:
@@ -148,7 +166,10 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		const patch = this.smartFadePatch(key, value);
 		if (patch) {
 			this.windowOverlay.setSmartFadeDefaults(patch);
-			if (key === SMART_FADE_ENABLED_KEY) {
+			if (
+				key === SMART_FADE_ENABLED_KEY ||
+				key === SMART_FADE_TRIGGER_KEY
+			) {
 				this.update();
 			}
 		}
@@ -170,11 +191,18 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		};
 	}
 
-	private smartFadeToggle(key: string) {
+	private get usesInactivity(): boolean {
+		return (
+			this.smartFadeDefaults.enabled &&
+			this.smartFadeDefaults.fadeOnInactivity
+		);
+	}
+
+	private smartFadeActivityToggle(key: string) {
 		return {
 			type: "toggle" as const,
 			key,
-			disabled: () => !this.smartFadeDefaults.enabled,
+			disabled: () => !this.usesInactivity,
 		};
 	}
 
@@ -194,8 +222,8 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		if (key === SMART_FADE_IDLE_DELAY_KEY && typeof value === "number") {
 			return { idleDelayMs: value };
 		}
-		if (key === SMART_FADE_ON_BLUR_KEY && typeof value === "boolean") {
-			return { fadeOnBlur: value };
+		if (key === SMART_FADE_TRIGGER_KEY && isSmartFadeTrigger(value)) {
+			return smartFadeTriggerOverrides(value);
 		}
 		if (key === SMART_FADE_ON_KEYBOARD_KEY && typeof value === "boolean") {
 			return { brightenOnKeyboard: value };

@@ -89,6 +89,8 @@ export class NativeWindowController {
 		this.document.defaultView?.addEventListener("blur", this.handleBlur);
 		this.document.addEventListener("keydown", this.handleKeyboard, true);
 		this.document.addEventListener("pointerdown", this.handlePointer, true);
+		this.document.addEventListener("wheel", this.handlePointer, true);
+		this.document.addEventListener("scroll", this.handlePointer, true);
 		this.document.addEventListener("visibilitychange", this.handleVisibility);
 	}
 
@@ -187,6 +189,8 @@ export class NativeWindowController {
 		this.document.defaultView?.removeEventListener("blur", this.handleBlur);
 		this.document.removeEventListener("keydown", this.handleKeyboard, true);
 		this.document.removeEventListener("pointerdown", this.handlePointer, true);
+		this.document.removeEventListener("wheel", this.handlePointer, true);
+		this.document.removeEventListener("scroll", this.handlePointer, true);
 		this.document.removeEventListener("visibilitychange", this.handleVisibility);
 		this.restoreOriginal();
 	}
