@@ -63,6 +63,11 @@
 	color: var(--text-on-accent);
 }
 
+.window-overlay-badge.is-smart-fade {
+	background: var(--background-modifier-success);
+	color: var(--text-normal);
+}
+
 .window-overlay-status {
 	margin-top: var(--size-2-2);
 	color: var(--text-faint);
@@ -71,6 +76,29 @@
 
 .window-overlay-card .setting-item:last-of-type {
 	border-bottom: 0;
+}
+
+.window-overlay-smart-fade {
+	margin-top: var(--size-4-2);
+	border-top: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.window-overlay-smart-fade > summary {
+	padding: var(--size-4-3) 0;
+	cursor: pointer;
+	font-weight: var(--font-semibold);
+}
+
+.window-overlay-smart-fade-status {
+	float: right;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-normal);
+}
+
+.window-overlay-smart-fade-body {
+	padding-left: var(--size-4-4);
 }
 
 .window-overlay-error {

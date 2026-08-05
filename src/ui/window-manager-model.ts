@@ -2,10 +2,13 @@ import {
 	DEFAULT_WINDOW_PREFERENCE,
 	clampOpacity,
 	cloneWindowPreference,
+	opacityPercent,
+	type SmartFadeSettings,
 	type SmartFadeOverrides,
 	type WindowPreference,
 } from "../model/settings";
 import type { PersistenceIdentity } from "../model/window-target";
+import type { SmartFadeState } from "../behavior/smart-fade-state-machine";
 
 export function updateWindowPreference(
 	current: WindowPreference,
@@ -53,6 +56,18 @@ export function clearSmartFadeOverrides(
 	const preference = cloneWindowPreference(current);
 	delete preference.smartFade;
 	return preference;
+}
+
+export function smartFadeStatus(
+	settings: SmartFadeSettings,
+	state: SmartFadeState,
+): string {
+	if (!settings.enabled) {
+		return "Off";
+	}
+	const opacity =
+		state === "active" ? settings.activeOpacity : settings.idleOpacity;
+	return `${state === "active" ? "Active" : "Idle"} · ${opacityPercent(opacity)}%`;
 }
 
 export function persistenceLabel(

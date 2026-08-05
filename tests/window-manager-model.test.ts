@@ -3,6 +3,7 @@ import {
 	clearSmartFadeOverrides,
 	persistenceLabel,
 	resetWindowPreference,
+	smartFadeStatus,
 	updateSmartFadeOverrides,
 	updateWindowPreference,
 } from "../src/ui/window-manager-model";
@@ -16,6 +17,24 @@ describe("window manager model", () => {
 			),
 		).toEqual({ opacity: 0.5, pinned: true });
 		expect(resetWindowPreference()).toEqual({ opacity: 1, pinned: false });
+	});
+
+	it("summarizes active, idle, and disabled smart fade states", () => {
+		const settings = {
+			enabled: true,
+			activeOpacity: 0.9,
+			idleOpacity: 0.6,
+			idleDelayMs: 1_250,
+			fadeOnBlur: true,
+			brightenOnKeyboard: true,
+			brightenOnPointer: true,
+		};
+
+		expect(smartFadeStatus(settings, "active")).toBe("Active · 90%");
+		expect(smartFadeStatus(settings, "idle")).toBe("Idle · 60%");
+		expect(smartFadeStatus({ ...settings, enabled: false }, "idle")).toBe(
+			"Off",
+		);
 	});
 
 	it("updates and clears smart fade overrides without losing window controls", () => {

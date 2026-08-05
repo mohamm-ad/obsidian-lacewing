@@ -282,6 +282,11 @@ export default class WindowOverlayPlugin extends Plugin {
 
 		new WindowManagerModal(this.app, this.registry, {
 			isSaved: (identity) => this.store?.has(identity) ?? false,
+			resolveSmartFade: (_descriptor, preference) =>
+				resolveSmartFadeSettings(
+					this.currentSettings.smartFadeDefaults,
+					preference,
+				),
 			setPreference: (descriptor, preference) =>
 				this.setWindowPreference(descriptor, preference),
 			reset: (descriptor) => this.resetWindow(descriptor),
