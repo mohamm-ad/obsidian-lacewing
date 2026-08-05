@@ -24,6 +24,8 @@ or macOS Space behavior.
   configurable idle delay or as soon as focus moves elsewhere.
 - Configure Smart Fade globally, then override its behavior for the main
   window or any individual pop-out.
+- Smoothly animate active and idle opacity changes with interruptible,
+  reduced-motion-aware transitions.
 - Reapply managed state after focus, show, restore, and visibility events.
 - Restore original native window state when the plugin unloads.
 
@@ -71,6 +73,12 @@ Typing, arrow and paging keys, clicks, and scrolling with a mouse, trackpad, or
 scrollbar can all reset the inactivity timer when their activity controls are
 enabled.
 
+Set **Transition duration** from 0–500 ms. A value around 180 ms feels quick
+without looking abrupt; 0 ms is instant. **Respect reduced motion** makes
+changes instant whenever Reduce Motion is enabled in macOS Accessibility
+settings. Existing installations migrate to 0 ms so updating the plugin does
+not silently change its visual behavior; new installations default to 180 ms.
+
 In the Window Manager, expand **Smart fade** on any window to inherit the
 global setting or customize that window. The live badge shows whether the
 window is Active or Idle. **Use global settings** removes only the Smart Fade
@@ -87,6 +95,8 @@ returns all managed windows to 100% and unpinned.
 - Opacity is clamped to 50–100% at every input and persistence boundary.
 - Smart Fade timers are cancelled when settings change, a window closes, or
   the plugin unloads.
+- Opacity transitions are interruptible and are bypassed during emergency
+  restore, native show/restore correction, and plugin unload.
 - The plugin snapshots opacity and pin state before adopting a native window.
 - Disabling or reloading the plugin restores those original values.
 - Electron access is isolated in a guarded adapter that resolves

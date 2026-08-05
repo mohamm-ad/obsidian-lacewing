@@ -24,6 +24,9 @@ It verifies:
   all three fade-trigger modes, reading navigation and scrolling, focus/blur
   behavior, timer replacement, per-window overrides, session-only behavior,
   pin preservation, and unload restoration
+- transition clamping, easing, interruption, reduced-motion behavior,
+  per-window duration overrides, native show/restore correction, asynchronous
+  Electron failures, and unload cancellation
 - production bundling and manifest/version consistency
 - external Obsidian and Electron runtimes are not embedded in `main.js`
 
@@ -70,6 +73,17 @@ Overlay** in Community plugins, and reload Obsidian before testing.
 15. Select a trigger that includes inactivity. Confirm arrow keys, Page Up or
     Down, space, mouse or trackpad scrolling, and dragging the scrollbar reset
     the idle timer when their corresponding activity controls are enabled.
+16. Set transition duration to 180 ms and repeatedly alternate between active
+    and idle states. Confirm each change feels smooth and reverses immediately
+    when activity resumes rather than completing the obsolete transition.
+17. Set transition duration to 0 ms and confirm opacity changes instantly.
+    Enable macOS Reduce Motion and confirm **Respect reduced motion** also makes
+    a nonzero transition instant.
+18. Give two pop-outs different transition durations and confirm they behave
+    independently and return after reopening persistent single-note pop-outs.
+19. Trigger restore commands and disable the plugin during a transition.
+    Confirm recovery is immediate and no delayed animation changes the restored
+    opacity afterward.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.
