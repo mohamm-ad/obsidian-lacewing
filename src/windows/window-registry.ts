@@ -1,6 +1,7 @@
 import {
 	DEFAULT_SMART_FADE_SETTINGS,
 	DEFAULT_WINDOW_PREFERENCE,
+	type ContrastShieldLevel,
 	type SmartFadeSettings,
 	type WindowPreference,
 } from "../model/settings";
@@ -13,6 +14,7 @@ import {
 } from "../model/window-target";
 import type { ElectronWindowAdapter } from "../native/electron-window-adapter";
 import { NativeWindowController } from "../native/native-window-controller";
+import { ContrastShieldController } from "../contrast/contrast-shield-controller";
 
 export interface WindowCandidate {
 	runtimeId: string;
@@ -27,6 +29,7 @@ interface ManagedWindowTarget {
 	candidate: WindowCandidate;
 	persistence: PersistenceIdentity;
 	controller: NativeWindowController | null;
+	shieldController: ContrastShieldController;
 	error: string | null;
 }
 
@@ -37,6 +40,10 @@ export type PreferenceResolver = (
 export type SmartFadeResolver = (
 	persistence: PersistenceIdentity,
 ) => SmartFadeSettings;
+
+export type ContrastShieldResolver = (
+	persistence: PersistenceIdentity,
+) => ContrastShieldLevel;
 
 export class WindowRegistry {
 	private readonly targets = new Map<string, ManagedWindowTarget>();
@@ -49,6 +56,8 @@ export class WindowRegistry {
 		private readonly resolveSmartFade: SmartFadeResolver = () => ({
 			...DEFAULT_SMART_FADE_SETTINGS,
 		}),
+		private readonly resolveContrastShield: ContrastShieldResolver = () =>
+			"none",
 	) {}
 
 	onChange(listener: () => void): () => void {
@@ -92,6 +101,13 @@ export class WindowRegistry {
 		return applied;
 	}
 
+	setContrastShield(runtimeId: string, level: ContrastShieldLevel): boolean {
+		const applied =
+			this.targets.get(runtimeId)?.shieldController.set(level) ?? false;
+		this.emitChange();
+		return applied;
+	}
+
 	focus(runtimeId: string): boolean {
 		const controller = this.targets.get(runtimeId)?.controller;
 		if (!controller) {
@@ -109,6 +125,7 @@ export class WindowRegistry {
 				enabled: false,
 			});
 			target.controller?.setPreference(DEFAULT_WINDOW_PREFERENCE);
+			target.shieldController.set("none");
 		}
 		this.emitChange();
 	}
@@ -123,6 +140,21 @@ export class WindowRegistry {
 			target.controller?.setPreference(preference);
 			target.controller?.setSmartFade(
 				this.resolveSmartFade(target.persistence),
+			);
+			target.shieldController.set(
+				this.resolveContrastShield(target.persistence),
+			);
+		}
+		this.emitChange();
+	}
+
+	refreshContrastShield(runtimeId?: string): void {
+		for (const target of this.targets.values()) {
+			if (runtimeId && target.candidate.runtimeId !== runtimeId) {
+				continue;
+			}
+			target.shieldController.set(
+				this.resolveContrastShield(target.persistence),
 			);
 		}
 		this.emitChange();
@@ -149,6 +181,7 @@ export class WindowRegistry {
 		for (const [runtimeId, target] of this.targets) {
 			if (!candidateIds.has(runtimeId)) {
 				target.controller?.dispose();
+				target.shieldController.dispose();
 				this.targets.delete(runtimeId);
 			}
 		}
@@ -185,6 +218,9 @@ export class WindowRegistry {
 						existing.controller?.setSmartFade(
 							this.resolveSmartFade(persistence),
 						);
+						existing.shieldController.set(
+							this.resolveContrastShield(persistence),
+						);
 					}
 					return;
 				}
@@ -193,9 +229,13 @@ export class WindowRegistry {
 					candidate,
 					persistence,
 					controller: null,
+					shieldController: new ContrastShieldController(candidate.document),
 					error: null,
 				};
 				this.targets.set(candidate.runtimeId, target);
+				target.shieldController.set(
+					this.resolveContrastShield(persistence),
+				);
 
 				try {
 					const nativeWindow = await this.adapter.resolve(
@@ -234,6 +274,7 @@ export class WindowRegistry {
 		this.disposed = true;
 		for (const target of this.targets.values()) {
 			target.controller?.dispose();
+			target.shieldController.dispose();
 		}
 		this.targets.clear();
 		this.listeners.clear();
@@ -255,6 +296,7 @@ export class WindowRegistry {
 			smartFadeState: controller?.smartFadeState ?? "active",
 			effectiveOpacity:
 				controller?.effectiveOpacity ?? DEFAULT_WINDOW_PREFERENCE.opacity,
+			contrastShield: target.shieldController.level,
 			supported: controller !== null,
 			error: controller?.lastError ?? target.error,
 		};

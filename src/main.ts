@@ -11,8 +11,10 @@ import {
 import { DEFAULT_HOTKEYS } from "./commands/default-hotkeys";
 import {
 	normalizeWindowPreference,
+	resolveContrastShield,
 	resolveSmartFadeSettings,
 	type SmartFadeSettings,
+	type ContrastShieldLevel,
 	type WindowOverlaySettings,
 	type WindowPreference,
 } from "./model/settings";
@@ -72,6 +74,9 @@ export default class WindowOverlayPlugin extends Plugin {
 				this.store?.resolveSmartFade(identity) ?? {
 					...this.settings.smartFadeDefaults,
 				},
+			(identity) =>
+				this.store?.resolveContrastShield(identity) ??
+				this.settings.defaultContrastShield,
 		);
 		this.activeCommands = new ActiveWindowCommands(
 			this.registry,
@@ -190,6 +195,7 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.settings = this.store.settings;
 		this.registry?.reapplyPersistentPreferences();
 		this.registry?.refreshSmartFade();
+		this.registry?.refreshContrastShield();
 	}
 
 	setDefaultOverlayOpacity(opacity: number): void {
@@ -201,8 +207,14 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.registry?.refreshSmartFade();
 	}
 
+	setDefaultContrastShield(level: ContrastShieldLevel): void {
+		this.store?.setDefaultContrastShield(level);
+		this.registry?.refreshContrastShield();
+	}
+
 	restoreAllWindows(): void {
 		this.store?.setSmartFadeDefaults({ enabled: false });
+		this.store?.setDefaultContrastShield("none");
 		this.store?.resetAll();
 		this.registry?.restoreAll();
 		new Notice("Restored every managed overlay.");
@@ -287,6 +299,11 @@ export default class WindowOverlayPlugin extends Plugin {
 					this.currentSettings.smartFadeDefaults,
 					preference,
 				),
+			resolveContrastShield: (_descriptor, preference) =>
+				resolveContrastShield(
+					this.currentSettings.defaultContrastShield,
+					preference,
+				),
 			setPreference: (descriptor, preference) =>
 				this.setWindowPreference(descriptor, preference),
 			reset: (descriptor) => this.resetWindow(descriptor),
@@ -307,6 +324,13 @@ export default class WindowOverlayPlugin extends Plugin {
 			descriptor.runtimeId,
 			resolveSmartFadeSettings(defaults, normalized),
 		);
+		this.registry.setContrastShield(
+			descriptor.runtimeId,
+			resolveContrastShield(
+				this.currentSettings.defaultContrastShield,
+				normalized,
+			),
+		);
 		return true;
 	}
 
@@ -320,6 +344,10 @@ export default class WindowOverlayPlugin extends Plugin {
 			this.registry?.setSmartFade(
 				descriptor.runtimeId,
 				this.store.resolveSmartFade(descriptor.persistence),
+			);
+			this.registry?.setContrastShield(
+				descriptor.runtimeId,
+				this.store.resolveContrastShield(descriptor.persistence),
 			);
 		}
 	}

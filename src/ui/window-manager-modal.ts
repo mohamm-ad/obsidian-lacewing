@@ -8,6 +8,7 @@ import {
 	smartFadeTriggerOverrides,
 	type SmartFadeOverrides,
 	type SmartFadeSettings,
+	type ContrastShieldLevel,
 	type WindowPreference,
 } from "../model/settings";
 import type {
@@ -34,6 +35,10 @@ export interface WindowManagerActions {
 		descriptor: WindowTargetDescriptor,
 		preference: WindowPreference,
 	): SmartFadeSettings;
+	resolveContrastShield(
+		descriptor: WindowTargetDescriptor,
+		preference: WindowPreference,
+	): ContrastShieldLevel;
 	reset(descriptor: WindowTargetDescriptor): void;
 }
 

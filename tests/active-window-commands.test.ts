@@ -31,6 +31,7 @@ function descriptor(
 		},
 		smartFadeState: "active",
 		effectiveOpacity: smartFadeEnabled ? 0.9 : preference.opacity,
+		contrastShield: "none",
 		supported: true,
 		error: null,
 	};

@@ -210,6 +210,37 @@ describe("window registry", () => {
 		expect(registry.descriptors[0]?.smartFade.enabled).toBe(true);
 	});
 
+	it("applies, refreshes, and removes contrast shield markers", async () => {
+		const nativeWindow = new RegistryNativeWindow(8);
+		const adapter = {
+			resolve: vi.fn(async () => nativeWindow),
+		} as unknown as ElectronWindowAdapter;
+		let shield: "medium" | "strong" = "medium";
+		const main = candidate("main", "main", []);
+		const registry = new WindowRegistry(
+			adapter,
+			() => null,
+			undefined,
+			() => shield,
+		);
+
+		await registry.sync([main]);
+		expect(
+			main.document.documentElement.dataset.windowOverlayContrastShield,
+		).toBe("medium");
+		expect(registry.descriptors[0]?.contrastShield).toBe("medium");
+
+		shield = "strong";
+		registry.refreshContrastShield();
+		expect(
+			main.document.documentElement.dataset.windowOverlayContrastShield,
+		).toBe("strong");
+		await registry.sync([]);
+		expect(
+			main.document.documentElement.dataset.windowOverlayContrastShield,
+		).toBeUndefined();
+	});
+
 	it("does not adopt a window when resolution finishes after disposal", async () => {
 		const nativeWindow = new RegistryNativeWindow(4);
 		let finishResolution!: (value: NativeBrowserWindow) => void;

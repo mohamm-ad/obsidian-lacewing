@@ -1,5 +1,6 @@
 import {
 	MAIN_WINDOW_KEY,
+	type ContrastShieldLevel,
 	type SmartFadeSettings,
 	type WindowPreference,
 } from "./settings";
@@ -32,6 +33,7 @@ export interface WindowTargetDescriptor {
 	smartFade: SmartFadeSettings;
 	smartFadeState: SmartFadeState;
 	effectiveOpacity: number;
+	contrastShield: ContrastShieldLevel;
 	supported: boolean;
 	error: string | null;
 }
