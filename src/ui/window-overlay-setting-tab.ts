@@ -17,6 +17,8 @@ const SMART_FADE_IDLE_DELAY_KEY = "smartFadeIdleDelay";
 const SMART_FADE_TRIGGER_KEY = "smartFadeTrigger";
 const SMART_FADE_ON_KEYBOARD_KEY = "smartFadeOnKeyboard";
 const SMART_FADE_ON_POINTER_KEY = "smartFadeOnPointer";
+const SMART_FADE_TRANSITION_DURATION_KEY = "smartFadeTransitionDuration";
+const SMART_FADE_REDUCED_MOTION_KEY = "smartFadeReducedMotion";
 
 export class WindowOverlaySettingTab extends PluginSettingTab {
 	constructor(app: App, private readonly windowOverlay: WindowOverlayPlugin) {
@@ -72,6 +74,27 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 						desc: "Opacity used when the selected trigger fades the window.",
 						control: this.smartFadeOpacitySlider(
 							SMART_FADE_IDLE_OPACITY_KEY,
+						),
+					},
+					{
+						name: "Transition duration",
+						desc: "How quickly opacity changes. Use 0 ms for instant changes; 150–200 ms usually feels natural.",
+						control: {
+							type: "slider",
+							key: SMART_FADE_TRANSITION_DURATION_KEY,
+							min: 0,
+							max: 500,
+							step: 10,
+							disabled: () => !this.smartFadeDefaults.enabled,
+							displayFormat: (value) =>
+								this.formatTransitionDuration(value),
+						},
+					},
+					{
+						name: "Respect reduced motion",
+						desc: "Use instant opacity changes when Reduce Motion is enabled in macOS Accessibility settings.",
+						control: this.smartFadeToggle(
+							SMART_FADE_REDUCED_MOTION_KEY,
 						),
 					},
 					{
@@ -153,6 +176,10 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 				return smartFade.brightenOnKeyboard;
 			case SMART_FADE_ON_POINTER_KEY:
 				return smartFade.brightenOnPointer;
+			case SMART_FADE_TRANSITION_DURATION_KEY:
+				return smartFade.transitionDurationMs;
+			case SMART_FADE_REDUCED_MOTION_KEY:
+				return smartFade.respectReducedMotion;
 		}
 		return undefined;
 	}
@@ -206,6 +233,14 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		};
 	}
 
+	private smartFadeToggle(key: string) {
+		return {
+			type: "toggle" as const,
+			key,
+			disabled: () => !this.smartFadeDefaults.enabled,
+		};
+	}
+
 	private smartFadePatch(
 		key: string,
 		value: unknown,
@@ -231,11 +266,24 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		if (key === SMART_FADE_ON_POINTER_KEY && typeof value === "boolean") {
 			return { brightenOnPointer: value };
 		}
+		if (
+			key === SMART_FADE_TRANSITION_DURATION_KEY &&
+			typeof value === "number"
+		) {
+			return { transitionDurationMs: value };
+		}
+		if (key === SMART_FADE_REDUCED_MOTION_KEY && typeof value === "boolean") {
+			return { respectReducedMotion: value };
+		}
 		return null;
 	}
 
 	private formatDelay(milliseconds: number): string {
 		const seconds = milliseconds / 1_000;
 		return `${seconds.toFixed(Number.isInteger(seconds) ? 0 : 2)} s`;
+	}
+
+	private formatTransitionDuration(milliseconds: number): string {
+		return milliseconds === 0 ? "Instant" : `${milliseconds} ms`;
 	}
 }

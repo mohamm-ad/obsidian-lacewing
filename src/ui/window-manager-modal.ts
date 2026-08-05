@@ -298,6 +298,33 @@ export class WindowManagerModal extends Modal {
 			);
 
 			new Setting(body)
+				.setName("Transition duration")
+				.setDesc("How quickly opacity changes. Use 0 ms for instant changes; 150–200 ms usually feels natural.")
+				.setDisabled(!descriptor.supported)
+				.addSlider((slider) => {
+					slider
+						.setDisabled(!descriptor.supported)
+						.setLimits(0, 500, 10)
+						.setValue(effective.transitionDurationMs)
+						.setInstant(true)
+						.setDisplayFormat((value) =>
+							this.formatTransitionDuration(value),
+						)
+						.onChange((value) =>
+							applyPatch({ transitionDurationMs: value }),
+						);
+				});
+
+			this.renderSmartFadeToggle(
+				body,
+				"Respect reduced motion",
+				"Use instant changes when Reduce Motion is enabled in macOS Accessibility settings.",
+				effective.respectReducedMotion,
+				(value) => applyPatch({ respectReducedMotion: value }),
+				descriptor.supported,
+			);
+
+			new Setting(body)
 				.setName("Fade trigger")
 				.setDesc("Focus loss only keeps this window bright while you read it.")
 				.setDisabled(!descriptor.supported)
@@ -435,6 +462,10 @@ export class WindowManagerModal extends Modal {
 	private formatDelay(milliseconds: number): string {
 		const seconds = milliseconds / 1_000;
 		return `${seconds.toFixed(Number.isInteger(seconds) ? 0 : 2)} s`;
+	}
+
+	private formatTransitionDuration(milliseconds: number): string {
+		return milliseconds === 0 ? "Instant" : `${milliseconds} ms`;
 	}
 
 	private applyFromControl(

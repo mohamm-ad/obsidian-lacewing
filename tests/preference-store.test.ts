@@ -91,6 +91,8 @@ describe("preference store", () => {
 			smartFade: {
 				fadeOnBlur: true,
 				fadeOnInactivity: false,
+				transitionDurationMs: 220,
+				respectReducedMotion: false,
 			},
 		});
 
@@ -98,6 +100,8 @@ describe("preference store", () => {
 			enabled: true,
 			fadeOnBlur: true,
 			fadeOnInactivity: false,
+			transitionDurationMs: 220,
+			respectReducedMotion: false,
 		});
 	});
 
