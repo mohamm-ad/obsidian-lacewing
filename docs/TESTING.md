@@ -20,6 +20,9 @@ It verifies:
   restoration
 - manager view-model and active-window command targeting
 - overlay duplicate tracking
+- Smart Fade migration, clamping, active/idle timing, activity triggers,
+  focus/blur behavior, timer replacement, per-window overrides, session-only
+  behavior, pin preservation, and unload restoration
 - production bundling and manifest/version consistency
 - external Obsidian and Electron runtimes are not embedded in `main.js`
 
@@ -49,6 +52,17 @@ Overlay** in Community plugins, and reload Obsidian before testing.
    return to the opacity and pin state they had before the plugin adopted them.
 9. Re-enable the plugin and confirm the main and single-note saved preferences
    return while mixed/non-note targets remain session-only.
+10. Enable **Smart fade** in plugin settings. Set active opacity to 90%, idle
+    opacity to 60%, and delay to 1.25 seconds. Confirm the focused window fades
+    after the delay and brightens immediately when typing or clicking.
+11. Switch repeatedly between Obsidian and another app. Confirm fade-on-blur
+    moves directly to idle opacity and preserves pinning.
+12. Give the main window and two single-note pop-outs different Smart Fade
+    values. Close and reopen a single-note pop-out and confirm its values
+    return. Confirm a mixed pop-out remains session-only.
+13. Run the active-window restore command while Smart Fade is on. Confirm that
+    window returns to 100% and Smart Fade is off for it. Run global restore and
+    confirm Smart Fade is disabled globally.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.

@@ -24,28 +24,33 @@ guarded `window.require`, resolves the main window directly, and matches a
 pop-out with a temporary DOM marker and a bounded retry loop.
 
 `NativeWindowController` snapshots native opacity and always-on-top state,
-clamps every managed opacity, uses `floating` for pinning, and reapplies desired
-state after native focus/show/restore and DOM focus/visibility events. Disposal
-removes every listener and restores the snapshot. Resolution that completes
-after registry disposal is ignored.
+clamps every managed opacity, uses `floating` for pinning, and delegates
+active/idle behavior to a platform-independent Smart Fade state machine.
+Keyboard and pointer activity reset its idle timer; focus, blur, show, restore,
+and visibility events reapply the correct current state. Disposal cancels the
+timer, removes every listener, and restores the snapshot. Resolution that
+completes after registry disposal is ignored.
 
 No Electron object or type crosses into the UI or persistence modules.
 
 ## Persistence
 
-`PreferenceStore` validates schema version 1 data at load time and serializes
-immutable snapshots through a short debounce. The main window is stored under
-`main`; unambiguous single-note pop-outs are stored by vault-relative note
-path. File and folder rename/delete events migrate or remove affected entries.
+`PreferenceStore` validates schema version 2 data at load time, safely migrates
+version 1 preferences with Smart Fade disabled, and serializes immutable
+snapshots through a short debounce. Global Smart Fade defaults are merged with
+optional target overrides. The main window is stored under `main`;
+unambiguous single-note pop-outs are stored by vault-relative note path. File
+and folder rename/delete events migrate or remove affected entries.
 
 The 50% floor is enforced while loading, changing, serializing, and applying a
 preference. Session-only targets can be controlled but never enter saved data.
 
 ## UI and commands
 
-The manager modal uses Obsidian `Modal`, `Setting`, slider, toggle, and button
-components with theme variables and keyboard-native controls. Plugin settings
-use Obsidian 1.13's declarative, searchable settings definitions.
+The manager modal uses Obsidian `Modal`, `Setting`, slider, toggle, dropdown,
+and button components with theme variables and keyboard-native controls. Smart
+Fade uses progressive disclosure and exposes live Active/Idle state. Plugin
+settings use Obsidian 1.13's declarative, searchable settings definitions.
 
 Active-window commands select targets by Obsidian's `activeWindow` DOM object.
 The command service has no Electron dependency and is unit-tested separately.

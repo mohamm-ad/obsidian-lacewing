@@ -179,6 +179,61 @@ describe("native window controller", () => {
 		controller.dispose();
 	});
 
+	it("honors disabled keyboard and pointer brighten triggers", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(8);
+		nativeWindow.focused = true;
+		const document = fakeDocument();
+		const controller = new NativeWindowController(
+			nativeWindow,
+			document,
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			idleDelayMs: 250,
+			brightenOnKeyboard: false,
+			brightenOnPointer: false,
+		});
+		await vi.advanceTimersByTimeAsync(250);
+		expect(nativeWindow.opacity).toBe(0.6);
+
+		document.dispatchEvent(new Event("keydown"));
+		document.dispatchEvent(new Event("pointerdown"));
+		expect(nativeWindow.opacity).toBe(0.6);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("preserves pinning through fade states and restores it on unload", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(9);
+		nativeWindow.focused = true;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(),
+			vi.fn(),
+			timerHost,
+		);
+		controller.setPreference({ opacity: 0.8, pinned: true });
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			idleDelayMs: 250,
+		});
+		expect(nativeWindow.pinned).toBe(true);
+		await vi.advanceTimersByTimeAsync(250);
+		expect(nativeWindow.opacity).toBe(0.6);
+		expect(nativeWindow.pinned).toBe(true);
+
+		controller.dispose();
+		expect(nativeWindow.opacity).toBe(1);
+		expect(nativeWindow.pinned).toBe(false);
+		vi.useRealTimers();
+	});
+
 	it("restores an unmanaged native opacity when smart fade is disabled", () => {
 		const nativeWindow = new MockNativeWindow(7);
 		nativeWindow.opacity = 0.35;

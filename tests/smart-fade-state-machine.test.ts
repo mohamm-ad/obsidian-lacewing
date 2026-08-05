@@ -108,6 +108,39 @@ describe("smart fade state machine", () => {
 		expect(changes).toHaveBeenLastCalledWith("active");
 	});
 
+	it("replaces the idle timer when settings change", async () => {
+		vi.useFakeTimers();
+		const machine = new SmartFadeStateMachine(
+			settings({ idleDelayMs: 1_000 }),
+			timerHost,
+			vi.fn(),
+		);
+		machine.start(true);
+		await vi.advanceTimersByTimeAsync(750);
+		machine.update(settings({ idleDelayMs: 250 }), true);
+		await vi.advanceTimersByTimeAsync(249);
+		expect(machine.currentState).toBe("active");
+		await vi.advanceTimersByTimeAsync(1);
+		expect(machine.currentState).toBe("idle");
+	});
+
+	it("applies changed opacity to the current state", async () => {
+		vi.useFakeTimers();
+		const changes = vi.fn();
+		const machine = new SmartFadeStateMachine(
+			settings({ idleDelayMs: 250, idleOpacity: 0.6 }),
+			timerHost,
+			changes,
+		);
+		machine.start(true);
+		await vi.advanceTimersByTimeAsync(250);
+		machine.update(settings({ idleOpacity: 0.55 }), true);
+
+		expect(machine.currentState).toBe("idle");
+		expect(machine.currentOpacity).toBe(0.55);
+		expect(changes).toHaveBeenLastCalledWith("idle");
+	});
+
 	it("stops cleanly without firing a pending idle transition", async () => {
 		vi.useFakeTimers();
 		const changes = vi.fn();

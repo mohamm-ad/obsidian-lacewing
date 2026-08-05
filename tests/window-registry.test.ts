@@ -172,6 +172,35 @@ describe("window registry", () => {
 		expect(nativeWindow.opacity).toBe(0.55);
 	});
 
+	it("applies a session-only smart fade override directly", async () => {
+		const nativeWindow = new RegistryNativeWindow(7);
+		const adapter = {
+			resolve: vi.fn(async () => nativeWindow),
+		} as unknown as ElectronWindowAdapter;
+		const registry = new WindowRegistry(adapter, () => null);
+
+		await registry.sync([
+			candidate("mixed", "popout", [
+				{ type: "markdown", filePath: "One.md" },
+				{ type: "markdown", filePath: "Two.md" },
+			]),
+		]);
+		expect(
+			registry.setSmartFade("mixed", {
+				enabled: true,
+				activeOpacity: 0.9,
+				idleOpacity: 0.55,
+				idleDelayMs: 1_000,
+				fadeOnBlur: true,
+				brightenOnKeyboard: true,
+				brightenOnPointer: true,
+			}),
+		).toBe(true);
+		expect(nativeWindow.opacity).toBe(0.55);
+		expect(registry.descriptors[0]?.persistence.key).toBeNull();
+		expect(registry.descriptors[0]?.smartFade.enabled).toBe(true);
+	});
+
 	it("does not adopt a window when resolution finishes after disposal", async () => {
 		const nativeWindow = new RegistryNativeWindow(4);
 		let finishResolution!: (value: NativeBrowserWindow) => void;

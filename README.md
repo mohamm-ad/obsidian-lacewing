@@ -20,6 +20,10 @@ or macOS Space behavior.
   opening a duplicate.
 - Persist the main-window preference for the vault and single-note pop-out
   preferences by vault-relative path.
+- Optionally keep a window at a readable active opacity, then fade it after a
+  configurable idle delay or as soon as focus moves elsewhere.
+- Configure Smart Fade globally, then override its behavior for the main
+  window or any individual pop-out.
 - Reapply managed state after focus, show, restore, and visibility events.
 - Restore original native window state when the plugin unloads.
 
@@ -48,9 +52,28 @@ These do not overlap the primary development vault's existing custom hotkeys.
 Change or remove them under **Settings → Hotkeys** by searching for “Window
 Overlay.”
 
+## Smart Fade
+
+Open **Settings → Window Overlay → Smart fade** to enable the behavior and set
+the active opacity, idle opacity, delay, and activity triggers. Existing users
+remain on fixed opacity until they enable it.
+
+In the Window Manager, expand **Smart fade** on any window to inherit the
+global setting or customize that window. The live badge shows whether the
+window is Active or Idle. **Use global settings** removes only the Smart Fade
+overrides; it does not discard that window's fixed opacity or pin preference.
+
+While Smart Fade is enabled, the increase/decrease opacity hotkeys adjust the
+active opacity for the current window. **Restore active window to 100%** is a
+recovery action: it disables Smart Fade for that window and restores full
+opacity. **Restore every managed overlay** disables Smart Fade globally and
+returns all managed windows to 100% and unpinned.
+
 ## Safety model
 
 - Opacity is clamped to 50–100% at every input and persistence boundary.
+- Smart Fade timers are cancelled when settings change, a window closes, or
+  the plugin unloads.
 - The plugin snapshots opacity and pin state before adopting a native window.
 - Disabling or reloading the plugin restores those original values.
 - Electron access is isolated in a guarded adapter that resolves
