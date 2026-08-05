@@ -1,9 +1,16 @@
 import {
+	DEFAULT_SMART_FADE_SETTINGS,
 	MAX_OPACITY,
 	clampOpacity,
 	cloneWindowPreference,
+	type SmartFadeSettings,
 	type WindowPreference,
 } from "../model/settings";
+import {
+	SmartFadeStateMachine,
+	type SmartFadeState,
+	type SmartFadeTimerHost,
+} from "../behavior/smart-fade-state-machine";
 import type {
 	NativeBrowserWindow,
 	NativeEventListener,
@@ -19,32 +26,70 @@ export class NativeWindowController {
 	private desired: WindowPreference | null = null;
 	private error: string | null = null;
 	private readonly snapshot: NativeWindowSnapshot;
+	private smartFadeSettings: SmartFadeSettings = {
+		...DEFAULT_SMART_FADE_SETTINGS,
+	};
+	private readonly smartFade: SmartFadeStateMachine;
 	private readonly nativeListeners: Array<{
 		event: NativeEventName;
 		listener: NativeEventListener;
 	}> = [];
 	private readonly reapply = (): void => {
-		if (this.desired) {
-			this.apply(this.desired);
+		this.applyCurrent();
+	};
+	private readonly handleFocus = (): void => {
+		this.smartFade.focus();
+		this.reapply();
+	};
+	private readonly handleBlur = (): void => {
+		this.smartFade.blur();
+		this.reapply();
+	};
+	private readonly handleKeyboard = (): void => {
+		if (this.smartFadeSettings.brightenOnKeyboard) {
+			this.smartFade.activity();
 		}
+	};
+	private readonly handlePointer = (): void => {
+		if (this.smartFadeSettings.brightenOnPointer) {
+			this.smartFade.activity();
+		}
+	};
+	private readonly handleVisibility = (): void => {
+		if (this.document.hidden) {
+			this.smartFade.blur();
+		}
+		this.reapply();
 	};
 
 	constructor(
 		private readonly nativeWindow: NativeBrowserWindow,
 		private readonly document: Document,
 		private readonly onChange: () => void,
+		timerHost: SmartFadeTimerHost = document.defaultView ?? window,
 	) {
 		this.snapshot = {
 			opacity: this.readNativeOpacity(),
 			pinned: this.readPinned(),
 		};
+		this.smartFade = new SmartFadeStateMachine(
+			this.smartFadeSettings,
+			timerHost,
+			() => this.applyCurrent(),
+		);
+		this.smartFade.start(this.isFocused);
 
-		for (const event of ["focus", "restore", "show"] as const) {
+		this.addNativeListener("focus", this.handleFocus);
+		this.addNativeListener("blur", this.handleBlur);
+		for (const event of ["restore", "show"] as const) {
 			this.addNativeListener(event, this.reapply);
 		}
 		this.addNativeListener("always-on-top-changed", this.onChange);
-		this.document.defaultView?.addEventListener("focus", this.reapply);
-		this.document.addEventListener("visibilitychange", this.reapply);
+		this.document.defaultView?.addEventListener("focus", this.handleFocus);
+		this.document.defaultView?.addEventListener("blur", this.handleBlur);
+		this.document.addEventListener("keydown", this.handleKeyboard, true);
+		this.document.addEventListener("pointerdown", this.handlePointer, true);
+		this.document.addEventListener("visibilitychange", this.handleVisibility);
 	}
 
 	get id(): number {
@@ -58,11 +103,24 @@ export class NativeWindowController {
 	get preference(): WindowPreference {
 		return this.desired
 			? cloneWindowPreference(this.desired)
-			: { opacity: this.readOpacity(), pinned: this.readPinned() };
+			: {
+					opacity: clampOpacity(this.snapshot.opacity),
+					pinned: this.snapshot.pinned,
+				};
 	}
 
 	get isFocused(): boolean {
 		return !this.nativeWindow.isDestroyed() && this.nativeWindow.isFocused();
+	}
+
+	get smartFadeState(): SmartFadeState {
+		return this.smartFade.currentState;
+	}
+
+	get effectiveOpacity(): number {
+		return this.smartFade.enabled
+			? this.smartFade.currentOpacity
+			: this.preference.opacity;
 	}
 
 	setPreference(preference: WindowPreference): boolean {
@@ -70,7 +128,21 @@ export class NativeWindowController {
 			...preference,
 			opacity: clampOpacity(preference.opacity),
 		});
-		return this.apply(this.desired);
+		return this.applyCurrent();
+	}
+
+	setSmartFade(settings: SmartFadeSettings): boolean {
+		const wasEnabled = this.smartFade.enabled;
+		this.smartFadeSettings = { ...settings };
+		this.smartFade.update(this.smartFadeSettings, this.isFocused);
+		if (wasEnabled && !settings.enabled && !this.desired) {
+			return this.applyNative(
+				this.snapshot.opacity,
+				this.snapshot.pinned,
+				false,
+			);
+		}
+		return this.applyCurrent();
 	}
 
 	focus(): void {
@@ -102,16 +174,42 @@ export class NativeWindowController {
 	}
 
 	dispose(): void {
+		this.smartFade.stop();
 		for (const { event, listener } of this.nativeListeners) {
 			this.nativeWindow.removeListener(event, listener);
 		}
 		this.nativeListeners.length = 0;
-		this.document.defaultView?.removeEventListener("focus", this.reapply);
-		this.document.removeEventListener("visibilitychange", this.reapply);
+		this.document.defaultView?.removeEventListener("focus", this.handleFocus);
+		this.document.defaultView?.removeEventListener("blur", this.handleBlur);
+		this.document.removeEventListener("keydown", this.handleKeyboard, true);
+		this.document.removeEventListener("pointerdown", this.handlePointer, true);
+		this.document.removeEventListener("visibilitychange", this.handleVisibility);
 		this.restoreOriginal();
 	}
 
-	private apply(preference: WindowPreference): boolean {
+	private applyCurrent(): boolean {
+		if (!this.desired && !this.smartFade.enabled) {
+			return true;
+		}
+
+		const preference = this.desired ?? {
+			opacity: this.snapshot.opacity,
+			pinned: this.snapshot.pinned,
+		};
+		return this.applyNative(
+			this.smartFade.enabled
+				? this.smartFade.currentOpacity
+				: preference.opacity,
+			preference.pinned,
+			this.smartFade.enabled || this.desired !== null,
+		);
+	}
+
+	private applyNative(
+		opacity: number,
+		pinned: boolean,
+		clamp: boolean,
+	): boolean {
 		if (this.nativeWindow.isDestroyed()) {
 			this.error = "The native window has closed.";
 			this.onChange();
@@ -119,11 +217,16 @@ export class NativeWindowController {
 		}
 
 		try {
-			this.nativeWindow.setOpacity(clampOpacity(preference.opacity));
-			this.nativeWindow.setAlwaysOnTop(
-				preference.pinned,
-				preference.pinned ? "floating" : "normal",
-			);
+			const targetOpacity = clamp ? clampOpacity(opacity) : opacity;
+			if (Math.abs(this.readNativeOpacity() - targetOpacity) > 0.001) {
+				this.nativeWindow.setOpacity(targetOpacity);
+			}
+			if (this.readPinned() !== pinned) {
+				this.nativeWindow.setAlwaysOnTop(
+					pinned,
+					pinned ? "floating" : "normal",
+				);
+			}
 			this.error = null;
 			this.onChange();
 			return true;
@@ -132,10 +235,6 @@ export class NativeWindowController {
 			this.onChange();
 			return false;
 		}
-	}
-
-	private readOpacity(): number {
-		return clampOpacity(this.readNativeOpacity(), MAX_OPACITY);
 	}
 
 	private readNativeOpacity(): number {

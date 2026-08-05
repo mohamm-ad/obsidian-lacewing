@@ -120,6 +120,31 @@ describe("window registry", () => {
 		});
 	});
 
+	it("applies resolved smart fade behavior to newly adopted windows", async () => {
+		const nativeWindow = new RegistryNativeWindow(5);
+		const adapter = {
+			resolve: vi.fn(async () => nativeWindow),
+		} as unknown as ElectronWindowAdapter;
+		const registry = new WindowRegistry(
+			adapter,
+			() => null,
+			() => ({
+				enabled: true,
+				activeOpacity: 0.9,
+				idleOpacity: 0.65,
+				idleDelayMs: 1_000,
+				fadeOnBlur: true,
+				brightenOnKeyboard: true,
+				brightenOnPointer: true,
+			}),
+		);
+
+		await registry.sync([candidate("main", "main", [])]);
+		expect(nativeWindow.opacity).toBe(0.65);
+		registry.dispose();
+		expect(nativeWindow.opacity).toBe(1);
+	});
+
 	it("does not adopt a window when resolution finishes after disposal", async () => {
 		const nativeWindow = new RegistryNativeWindow(4);
 		let finishResolution!: (value: NativeBrowserWindow) => void;

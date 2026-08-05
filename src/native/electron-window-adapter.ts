@@ -2,6 +2,7 @@ import type { WindowTargetKind } from "../model/window-target";
 
 export type NativeEventName =
 	| "always-on-top-changed"
+	| "blur"
 	| "closed"
 	| "focus"
 	| "restore"
@@ -117,4 +118,3 @@ export class ElectronWindowAdapter {
 		throw new Error("The native pop-out window could not be resolved.");
 	}
 }
-

@@ -65,6 +65,10 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.source = new ObsidianWindowSource(this.app);
 		this.registry = new WindowRegistry(adapter, (identity) =>
 			this.store?.resolve(identity) ?? null,
+			(identity) =>
+				this.store?.resolveSmartFade(identity) ?? {
+					...this.settings.smartFadeDefaults,
+				},
 		);
 		this.activeCommands = new ActiveWindowCommands(
 			this.registry,
@@ -183,6 +187,7 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.store.replace(await this.loadData());
 		this.settings = this.store.settings;
 		this.registry?.reapplyPersistentPreferences();
+		this.registry?.refreshSmartFade();
 	}
 
 	setDefaultOverlayOpacity(opacity: number): void {

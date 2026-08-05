@@ -1,5 +1,7 @@
 import {
+	DEFAULT_SMART_FADE_SETTINGS,
 	DEFAULT_WINDOW_PREFERENCE,
+	type SmartFadeSettings,
 	type WindowPreference,
 } from "../model/settings";
 import {
@@ -32,6 +34,10 @@ export type PreferenceResolver = (
 	persistence: PersistenceIdentity,
 ) => WindowPreference | null;
 
+export type SmartFadeResolver = (
+	persistence: PersistenceIdentity,
+) => SmartFadeSettings;
+
 export class WindowRegistry {
 	private readonly targets = new Map<string, ManagedWindowTarget>();
 	private readonly listeners = new Set<() => void>();
@@ -40,6 +46,9 @@ export class WindowRegistry {
 	constructor(
 		private readonly adapter: ElectronWindowAdapter,
 		private readonly resolvePreference: PreferenceResolver,
+		private readonly resolveSmartFade: SmartFadeResolver = () => ({
+			...DEFAULT_SMART_FADE_SETTINGS,
+		}),
 	) {}
 
 	onChange(listener: () => void): () => void {
@@ -88,6 +97,10 @@ export class WindowRegistry {
 
 	restoreAll(): void {
 		for (const target of this.targets.values()) {
+			target.controller?.setSmartFade({
+				...this.resolveSmartFade(target.persistence),
+				enabled: false,
+			});
 			target.controller?.setPreference(DEFAULT_WINDOW_PREFERENCE);
 		}
 		this.emitChange();
@@ -101,6 +114,21 @@ export class WindowRegistry {
 			const preference =
 				this.resolvePreference(target.persistence) ?? DEFAULT_WINDOW_PREFERENCE;
 			target.controller?.setPreference(preference);
+			target.controller?.setSmartFade(
+				this.resolveSmartFade(target.persistence),
+			);
+		}
+		this.emitChange();
+	}
+
+	refreshSmartFade(runtimeId?: string): void {
+		for (const target of this.targets.values()) {
+			if (runtimeId && target.candidate.runtimeId !== runtimeId) {
+				continue;
+			}
+			target.controller?.setSmartFade(
+				this.resolveSmartFade(target.persistence),
+			);
 		}
 		this.emitChange();
 	}
@@ -147,6 +175,9 @@ export class WindowRegistry {
 						if (preference) {
 							existing.controller?.setPreference(preference);
 						}
+						existing.controller?.setSmartFade(
+							this.resolveSmartFade(persistence),
+						);
 					}
 					return;
 				}
@@ -180,6 +211,9 @@ export class WindowRegistry {
 					if (preference) {
 						target.controller.setPreference(preference);
 					}
+					target.controller.setSmartFade(
+						this.resolveSmartFade(persistence),
+					);
 				} catch (error) {
 					target.error = error instanceof Error ? error.message : String(error);
 				}

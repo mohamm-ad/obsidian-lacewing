@@ -7,6 +7,13 @@ import {
 	type NativeEventName,
 } from "../src/native/electron-window-adapter";
 import { NativeWindowController } from "../src/native/native-window-controller";
+import { DEFAULT_SMART_FADE_SETTINGS } from "../src/model/settings";
+
+const timerHost = {
+	setTimeout: (callback: () => void, milliseconds: number) =>
+		globalThis.setTimeout(callback, milliseconds) as unknown as number,
+	clearTimeout: (timer: number) => globalThis.clearTimeout(timer),
+};
 
 class MockNativeWindow implements NativeBrowserWindow {
 	readonly webContents = {
@@ -79,6 +86,7 @@ function fakeDocument(): Document {
 		defaultView: windowEvents,
 		addEventListener: documentEvents.addEventListener.bind(documentEvents),
 		removeEventListener: documentEvents.removeEventListener.bind(documentEvents),
+		dispatchEvent: documentEvents.dispatchEvent.bind(documentEvents),
 	} as unknown as Document;
 }
 
@@ -118,6 +126,80 @@ describe("native window controller", () => {
 		expect(controller.setPreference({ opacity: 0.7, pinned: true })).toBe(false);
 		expect(controller.lastError).toMatch(/closed/u);
 		expect(() => controller.dispose()).not.toThrow();
+	});
+
+	it("fades on idle and brightens on keyboard activity", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(5);
+		nativeWindow.focused = true;
+		const document = fakeDocument();
+		const controller = new NativeWindowController(
+			nativeWindow,
+			document,
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			activeOpacity: 0.9,
+			idleOpacity: 0.6,
+			idleDelayMs: 500,
+		});
+
+		expect(nativeWindow.opacity).toBe(0.9);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(nativeWindow.opacity).toBe(0.6);
+		document.dispatchEvent(new Event("keydown"));
+		expect(nativeWindow.opacity).toBe(0.9);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("fades immediately on native blur and restores on focus", () => {
+		const nativeWindow = new MockNativeWindow(6);
+		nativeWindow.focused = true;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(),
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+		});
+
+		nativeWindow.focused = false;
+		nativeWindow.emit("blur");
+		expect(nativeWindow.opacity).toBe(0.6);
+		nativeWindow.focused = true;
+		nativeWindow.emit("focus");
+		expect(nativeWindow.opacity).toBe(0.92);
+		controller.dispose();
+	});
+
+	it("restores an unmanaged native opacity when smart fade is disabled", () => {
+		const nativeWindow = new MockNativeWindow(7);
+		nativeWindow.opacity = 0.35;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(),
+			vi.fn(),
+			timerHost,
+		);
+
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+		});
+		expect(nativeWindow.opacity).toBe(0.6);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: false,
+		});
+		expect(nativeWindow.opacity).toBe(0.35);
+		controller.dispose();
 	});
 });
 
