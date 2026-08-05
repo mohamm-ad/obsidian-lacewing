@@ -10,6 +10,8 @@ export function updateWindowPreference(
 	patch: Partial<WindowPreference>,
 ): WindowPreference {
 	return {
+		...current,
+		...patch,
 		opacity: clampOpacity(patch.opacity ?? current.opacity),
 		pinned: patch.pinned ?? current.pinned,
 	};

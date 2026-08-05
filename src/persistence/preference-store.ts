@@ -3,10 +3,15 @@ import {
 	DEFAULT_WINDOW_PREFERENCE,
 	MAIN_WINDOW_KEY,
 	cloneSettings,
+	cloneWindowPreference,
 	clampOpacity,
 	migrateNotePreference,
 	normalizeSettings,
+	normalizeSmartFadeSettings,
+	normalizeWindowPreference,
 	removeNotePreference,
+	resolveSmartFadeSettings,
+	type SmartFadeSettings,
 	type WindowOverlaySettings,
 	type WindowPreference,
 } from "../model/settings";
@@ -53,12 +58,21 @@ export class PreferenceStore {
 
 	resolve(identity: PersistenceIdentity): WindowPreference | null {
 		if (identity.key === MAIN_WINDOW_KEY) {
-			return this.value.main ? { ...this.value.main } : null;
+			return this.value.main
+				? cloneWindowPreference(this.value.main)
+				: null;
 		}
 
 		const path = identity.key ? notePathFromWindowKey(identity.key) : null;
 		const preference = path ? this.value.notePopouts[path] : null;
-		return preference ? { ...preference } : null;
+		return preference ? cloneWindowPreference(preference) : null;
+	}
+
+	resolveSmartFade(identity: PersistenceIdentity): SmartFadeSettings {
+		return resolveSmartFadeSettings(
+			this.value.smartFadeDefaults,
+			this.resolve(identity),
+		);
 	}
 
 	has(identity: PersistenceIdentity): boolean {
@@ -73,10 +87,7 @@ export class PreferenceStore {
 			return false;
 		}
 
-		const normalized = {
-			opacity: clampOpacity(preference.opacity),
-			pinned: preference.pinned,
-		};
+		const normalized = normalizeWindowPreference(preference);
 		if (identity.key === MAIN_WINDOW_KEY) {
 			this.value.main = normalized;
 		} else {
@@ -116,6 +127,14 @@ export class PreferenceStore {
 
 	setDefaultOverlayOpacity(opacity: number): void {
 		this.value.defaultOverlayOpacity = clampOpacity(opacity);
+		this.scheduleSave();
+	}
+
+	setSmartFadeDefaults(patch: Partial<SmartFadeSettings>): void {
+		this.value.smartFadeDefaults = normalizeSmartFadeSettings({
+			...this.value.smartFadeDefaults,
+			...patch,
+		});
 		this.scheduleSave();
 	}
 

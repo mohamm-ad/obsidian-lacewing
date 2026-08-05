@@ -30,13 +30,42 @@ describe("preference store", () => {
 
 		expect(saved).toEqual([
 			{
-				schemaVersion: 1,
+				schemaVersion: 2,
 				defaultOverlayOpacity: 0.85,
+				smartFadeDefaults: {
+					enabled: false,
+					activeOpacity: 0.92,
+					idleOpacity: 0.6,
+					idleDelayMs: 1_250,
+					fadeOnBlur: true,
+					brightenOnKeyboard: true,
+					brightenOnPointer: true,
+				},
 				main: { opacity: 0.5, pinned: true },
 				notePopouts: {},
 			},
 		]);
 		expect(store.resolve(identity)?.opacity).toBe(0.5);
+	});
+
+	it("persists global smart fade defaults and resolves target overrides", async () => {
+		const save = vi.fn(async () => {});
+		const store = new PreferenceStore(null, save, 100, timerHost);
+		const main = { key: "main", reason: "main" } as const;
+		store.setSmartFadeDefaults({ enabled: true, activeOpacity: 0.9 });
+		store.setPreference(main, {
+			opacity: 0.8,
+			pinned: false,
+			smartFade: { idleOpacity: 0.65 },
+		});
+
+		expect(store.resolveSmartFade(main)).toMatchObject({
+			enabled: true,
+			activeOpacity: 0.9,
+			idleOpacity: 0.65,
+		});
+		await store.flush();
+		expect(save).toHaveBeenCalledOnce();
 	});
 
 	it("debounces writes and supports note migration and reset", async () => {

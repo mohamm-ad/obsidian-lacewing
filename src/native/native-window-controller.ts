@@ -1,6 +1,7 @@
 import {
 	MAX_OPACITY,
 	clampOpacity,
+	cloneWindowPreference,
 	type WindowPreference,
 } from "../model/settings";
 import type {
@@ -56,7 +57,7 @@ export class NativeWindowController {
 
 	get preference(): WindowPreference {
 		return this.desired
-			? { ...this.desired }
+			? cloneWindowPreference(this.desired)
 			: { opacity: this.readOpacity(), pinned: this.readPinned() };
 	}
 
@@ -65,10 +66,10 @@ export class NativeWindowController {
 	}
 
 	setPreference(preference: WindowPreference): boolean {
-		this.desired = {
+		this.desired = cloneWindowPreference({
+			...preference,
 			opacity: clampOpacity(preference.opacity),
-			pinned: preference.pinned,
-		};
+		});
 		return this.apply(this.desired);
 	}
 

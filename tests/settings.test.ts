@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
 	DEFAULT_OVERLAY_OPACITY,
+	DEFAULT_SMART_FADE_SETTINGS,
+	MAX_IDLE_DELAY_MS,
 	MAX_OPACITY,
 	MIN_OPACITY,
 	adjustOpacity,
 	clampOpacity,
 	migrateNotePreference,
 	normalizeSettings,
+	resolveSmartFadeSettings,
 	opacityPercent,
 	removeNotePreference,
 } from "../src/model/settings";
@@ -45,9 +48,54 @@ describe("settings normalization", () => {
 		});
 
 		expect(settings.defaultOverlayOpacity).toBe(MIN_OPACITY);
+		expect(settings.schemaVersion).toBe(2);
+		expect(settings.smartFadeDefaults).toEqual(DEFAULT_SMART_FADE_SETTINGS);
 		expect(settings.main).toBeNull();
 		expect(settings.notePopouts).toEqual({
 			"Meetings/Call.md": { opacity: 0.76, pinned: true },
+		});
+	});
+
+	it("migrates schema version 1 without enabling smart fade", () => {
+		const settings = normalizeSettings({
+			schemaVersion: 1,
+			defaultOverlayOpacity: 0.85,
+			main: { opacity: 0.8, pinned: true },
+			notePopouts: {},
+		});
+
+		expect(settings.schemaVersion).toBe(2);
+		expect(settings.smartFadeDefaults.enabled).toBe(false);
+		expect(settings.main).toEqual({ opacity: 0.8, pinned: true });
+	});
+
+	it("validates smart fade defaults and per-window overrides", () => {
+		const settings = normalizeSettings({
+			smartFadeDefaults: {
+				enabled: true,
+				activeOpacity: 0.7,
+				idleOpacity: 0.9,
+				idleDelayMs: 50_000,
+				fadeOnBlur: false,
+				brightenOnKeyboard: true,
+				brightenOnPointer: false,
+			},
+			main: {
+				opacity: 0.8,
+				pinned: false,
+				smartFade: { idleOpacity: 0.1, idleDelayMs: 1_500 },
+			},
+		});
+
+		expect(settings.smartFadeDefaults.idleOpacity).toBe(0.7);
+		expect(settings.smartFadeDefaults.idleDelayMs).toBe(MAX_IDLE_DELAY_MS);
+		expect(resolveSmartFadeSettings(settings.smartFadeDefaults, settings.main)).toMatchObject({
+			enabled: true,
+			activeOpacity: 0.7,
+			idleOpacity: 0.5,
+			idleDelayMs: 1_500,
+			fadeOnBlur: false,
+			brightenOnPointer: false,
 		});
 	});
 
