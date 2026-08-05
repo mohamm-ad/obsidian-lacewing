@@ -11,6 +11,7 @@ import {
 	type SmartFadeState,
 	type SmartFadeTimerHost,
 } from "../behavior/smart-fade-state-machine";
+import { OpacityTransition } from "../behavior/opacity-transition";
 import type {
 	NativeBrowserWindow,
 	NativeEventListener,
@@ -30,12 +31,16 @@ export class NativeWindowController {
 		...DEFAULT_SMART_FADE_SETTINGS,
 	};
 	private readonly smartFade: SmartFadeStateMachine;
+	private readonly opacityTransition: OpacityTransition;
 	private readonly nativeListeners: Array<{
 		event: NativeEventName;
 		listener: NativeEventListener;
 	}> = [];
 	private readonly reapply = (): void => {
 		this.applyCurrent();
+	};
+	private readonly reapplyImmediate = (): void => {
+		this.applyCurrent(false);
 	};
 	private readonly handleFocus = (): void => {
 		this.smartFade.focus();
@@ -72,6 +77,7 @@ export class NativeWindowController {
 			opacity: this.readNativeOpacity(),
 			pinned: this.readPinned(),
 		};
+		this.opacityTransition = new OpacityTransition(timerHost);
 		this.smartFade = new SmartFadeStateMachine(
 			this.smartFadeSettings,
 			timerHost,
@@ -82,7 +88,7 @@ export class NativeWindowController {
 		this.addNativeListener("focus", this.handleFocus);
 		this.addNativeListener("blur", this.handleBlur);
 		for (const event of ["restore", "show"] as const) {
-			this.addNativeListener(event, this.reapply);
+			this.addNativeListener(event, this.reapplyImmediate);
 		}
 		this.addNativeListener("always-on-top-changed", this.onChange);
 		this.document.defaultView?.addEventListener("focus", this.handleFocus);
@@ -146,6 +152,7 @@ export class NativeWindowController {
 				this.snapshot.opacity,
 				this.snapshot.pinned,
 				false,
+				false,
 			);
 		}
 		return this.applyCurrent();
@@ -164,6 +171,7 @@ export class NativeWindowController {
 	}
 
 	restoreOriginal(): void {
+		this.opacityTransition.cancel();
 		if (this.nativeWindow.isDestroyed()) {
 			return;
 		}
@@ -181,6 +189,7 @@ export class NativeWindowController {
 
 	dispose(): void {
 		this.smartFade.stop();
+		this.opacityTransition.cancel();
 		for (const { event, listener } of this.nativeListeners) {
 			this.nativeWindow.removeListener(event, listener);
 		}
@@ -195,7 +204,7 @@ export class NativeWindowController {
 		this.restoreOriginal();
 	}
 
-	private applyCurrent(): boolean {
+	private applyCurrent(animate = true): boolean {
 		if (!this.desired && !this.smartFade.enabled) {
 			return true;
 		}
@@ -210,6 +219,7 @@ export class NativeWindowController {
 				: preference.opacity,
 			preference.pinned,
 			this.smartFade.enabled || this.desired !== null,
+			animate && this.smartFade.enabled,
 		);
 	}
 
@@ -217,8 +227,50 @@ export class NativeWindowController {
 		opacity: number,
 		pinned: boolean,
 		clamp: boolean,
+		animate: boolean,
 	): boolean {
 		if (this.nativeWindow.isDestroyed()) {
+			this.error = "The native window has closed.";
+			this.onChange();
+			return false;
+		}
+
+		try {
+			const targetOpacity = clamp ? clampOpacity(opacity) : opacity;
+			if (this.readPinned() !== pinned) {
+				this.nativeWindow.setAlwaysOnTop(
+					pinned,
+					pinned ? "floating" : "normal",
+				);
+			}
+			const currentOpacity = this.readNativeOpacity();
+			const duration =
+				animate && !this.shouldReduceMotion()
+					? this.smartFadeSettings.transitionDurationMs
+					: 0;
+			let opacityApplied = true;
+			this.error = null;
+			this.opacityTransition.start(
+				currentOpacity,
+				targetOpacity,
+				duration,
+				(value) => {
+					opacityApplied =
+						this.writeTransitionOpacity(value, clamp) && opacityApplied;
+				},
+			);
+			this.onChange();
+			return opacityApplied;
+		} catch (error) {
+			this.error = error instanceof Error ? error.message : String(error);
+			this.onChange();
+			return false;
+		}
+	}
+
+	private writeTransitionOpacity(opacity: number, clamp: boolean): boolean {
+		if (this.nativeWindow.isDestroyed()) {
+			this.opacityTransition.cancel();
 			this.error = "The native window has closed.";
 			this.onChange();
 			return false;
@@ -229,18 +281,27 @@ export class NativeWindowController {
 			if (Math.abs(this.readNativeOpacity() - targetOpacity) > 0.001) {
 				this.nativeWindow.setOpacity(targetOpacity);
 			}
-			if (this.readPinned() !== pinned) {
-				this.nativeWindow.setAlwaysOnTop(
-					pinned,
-					pinned ? "floating" : "normal",
-				);
-			}
 			this.error = null;
-			this.onChange();
 			return true;
 		} catch (error) {
+			this.opacityTransition.cancel();
 			this.error = error instanceof Error ? error.message : String(error);
 			this.onChange();
+			return false;
+		}
+	}
+
+	private shouldReduceMotion(): boolean {
+		if (!this.smartFadeSettings.respectReducedMotion) {
+			return false;
+		}
+		try {
+			return (
+				this.document.defaultView?.matchMedia?.(
+					"(prefers-reduced-motion: reduce)",
+				).matches === true
+			);
+		} catch {
 			return false;
 		}
 	}

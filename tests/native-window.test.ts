@@ -15,6 +15,11 @@ const timerHost = {
 	clearTimeout: (timer: number) => globalThis.clearTimeout(timer),
 };
 
+const INSTANT_SMART_FADE_SETTINGS = {
+	...DEFAULT_SMART_FADE_SETTINGS,
+	transitionDurationMs: 0,
+};
+
 class MockNativeWindow implements NativeBrowserWindow {
 	readonly webContents = {
 		executeJavaScript: vi.fn(async () => false),
@@ -78,9 +83,11 @@ class MockNativeWindow implements NativeBrowserWindow {
 	}
 }
 
-function fakeDocument(): Document {
+function fakeDocument(prefersReducedMotion = false): Document {
 	const documentEvents = new EventTarget();
-	const windowEvents = new EventTarget();
+	const windowEvents = Object.assign(new EventTarget(), {
+		matchMedia: vi.fn(() => ({ matches: prefersReducedMotion })),
+	});
 	return {
 		documentElement: { dataset: {} },
 		defaultView: windowEvents,
@@ -140,7 +147,7 @@ describe("native window controller", () => {
 			timerHost,
 		);
 		controller.setSmartFade({
-			...DEFAULT_SMART_FADE_SETTINGS,
+			...INSTANT_SMART_FADE_SETTINGS,
 			enabled: true,
 			activeOpacity: 0.9,
 			idleOpacity: 0.6,
@@ -166,7 +173,7 @@ describe("native window controller", () => {
 			timerHost,
 		);
 		controller.setSmartFade({
-			...DEFAULT_SMART_FADE_SETTINGS,
+			...INSTANT_SMART_FADE_SETTINGS,
 			enabled: true,
 		});
 
@@ -191,7 +198,7 @@ describe("native window controller", () => {
 			timerHost,
 		);
 		controller.setSmartFade({
-			...DEFAULT_SMART_FADE_SETTINGS,
+			...INSTANT_SMART_FADE_SETTINGS,
 			enabled: true,
 			idleDelayMs: 250,
 			brightenOnKeyboard: false,
@@ -221,7 +228,7 @@ describe("native window controller", () => {
 			timerHost,
 		);
 		controller.setSmartFade({
-			...DEFAULT_SMART_FADE_SETTINGS,
+			...INSTANT_SMART_FADE_SETTINGS,
 			enabled: true,
 			idleDelayMs: 250,
 		});
@@ -253,7 +260,7 @@ describe("native window controller", () => {
 		);
 		controller.setPreference({ opacity: 0.8, pinned: true });
 		controller.setSmartFade({
-			...DEFAULT_SMART_FADE_SETTINGS,
+			...INSTANT_SMART_FADE_SETTINGS,
 			enabled: true,
 			idleDelayMs: 250,
 		});
@@ -279,7 +286,7 @@ describe("native window controller", () => {
 		);
 
 		controller.setSmartFade({
-			...DEFAULT_SMART_FADE_SETTINGS,
+			...INSTANT_SMART_FADE_SETTINGS,
 			enabled: true,
 		});
 		expect(nativeWindow.opacity).toBe(0.6);
@@ -289,6 +296,143 @@ describe("native window controller", () => {
 		});
 		expect(nativeWindow.opacity).toBe(0.35);
 		controller.dispose();
+	});
+
+	it("animates idle and active opacity changes", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(11);
+		nativeWindow.focused = true;
+		const document = fakeDocument();
+		const controller = new NativeWindowController(
+			nativeWindow,
+			document,
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			activeOpacity: 0.9,
+			idleOpacity: 0.6,
+			idleDelayMs: 250,
+			transitionDurationMs: 100,
+		});
+
+		expect(nativeWindow.opacity).toBe(1);
+		await vi.advanceTimersByTimeAsync(100);
+		expect(nativeWindow.opacity).toBeCloseTo(0.9);
+		await vi.advanceTimersByTimeAsync(150);
+		expect(nativeWindow.opacity).toBeCloseTo(0.9);
+		await vi.advanceTimersByTimeAsync(100);
+		expect(nativeWindow.opacity).toBeCloseTo(0.6);
+
+		document.dispatchEvent(new Event("keydown"));
+		await vi.advanceTimersByTimeAsync(100);
+		expect(nativeWindow.opacity).toBeCloseTo(0.9);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("interrupts an idle transition when reading resumes", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(12);
+		nativeWindow.focused = true;
+		const document = fakeDocument();
+		const controller = new NativeWindowController(
+			nativeWindow,
+			document,
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			activeOpacity: 0.9,
+			idleOpacity: 0.5,
+			idleDelayMs: 250,
+			transitionDurationMs: 200,
+		});
+		await vi.advanceTimersByTimeAsync(314);
+		const interruptedOpacity = nativeWindow.opacity;
+		document.dispatchEvent(new Event("scroll"));
+		await vi.advanceTimersByTimeAsync(200);
+
+		expect(interruptedOpacity).toBeLessThan(0.9);
+		expect(nativeWindow.opacity).toBeCloseTo(0.9);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("uses instant changes when macOS reduced motion is enabled", () => {
+		const nativeWindow = new MockNativeWindow(13);
+		nativeWindow.focused = true;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(true),
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			transitionDurationMs: 180,
+			respectReducedMotion: true,
+		});
+
+		expect(nativeWindow.opacity).toBe(0.92);
+		nativeWindow.focused = false;
+		nativeWindow.emit("blur");
+		expect(nativeWindow.opacity).toBe(0.6);
+		controller.dispose();
+	});
+
+	it("can animate when reduced-motion matching is explicitly ignored", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(14);
+		nativeWindow.focused = true;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(true),
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			transitionDurationMs: 100,
+			respectReducedMotion: false,
+		});
+
+		expect(nativeWindow.opacity).toBe(1);
+		await vi.advanceTimersByTimeAsync(100);
+		expect(nativeWindow.opacity).toBeCloseTo(0.92);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("cancels transitions and restores the native snapshot on unload", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(15);
+		nativeWindow.opacity = 0.35;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(),
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			transitionDurationMs: 500,
+		});
+		await vi.advanceTimersByTimeAsync(32);
+		expect(nativeWindow.opacity).not.toBe(0.35);
+
+		controller.dispose();
+		expect(nativeWindow.opacity).toBe(0.35);
+		await vi.advanceTimersByTimeAsync(1_000);
+		expect(nativeWindow.opacity).toBe(0.35);
+		vi.useRealTimers();
 	});
 });
 
