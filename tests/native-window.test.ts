@@ -434,6 +434,61 @@ describe("native window controller", () => {
 		expect(nativeWindow.opacity).toBe(0.35);
 		vi.useRealTimers();
 	});
+
+	it("reapplies the exact target immediately after native show or restore", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(16);
+		nativeWindow.focused = true;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(),
+			vi.fn(),
+			timerHost,
+		);
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			activeOpacity: 0.9,
+			transitionDurationMs: 100,
+		});
+		await vi.advanceTimersByTimeAsync(100);
+		expect(nativeWindow.opacity).toBeCloseTo(0.9);
+
+		nativeWindow.opacity = 1;
+		nativeWindow.emit("show");
+		expect(nativeWindow.opacity).toBe(0.9);
+		nativeWindow.opacity = 1;
+		nativeWindow.emit("restore");
+		expect(nativeWindow.opacity).toBe(0.9);
+		controller.dispose();
+		vi.useRealTimers();
+	});
+
+	it("contains native failures that occur during an animation frame", async () => {
+		vi.useFakeTimers();
+		const nativeWindow = new MockNativeWindow(17);
+		nativeWindow.focused = true;
+		const controller = new NativeWindowController(
+			nativeWindow,
+			fakeDocument(),
+			vi.fn(),
+			timerHost,
+		);
+		nativeWindow.setOpacity.mockImplementationOnce(() => {
+			throw new Error("Opacity is unavailable");
+		});
+		controller.setSmartFade({
+			...DEFAULT_SMART_FADE_SETTINGS,
+			enabled: true,
+			transitionDurationMs: 100,
+		});
+
+		await vi.advanceTimersByTimeAsync(100);
+		expect(controller.lastError).toMatch(/unavailable/u);
+		expect(nativeWindow.setOpacity).toHaveBeenCalledOnce();
+		controller.dispose();
+		vi.useRealTimers();
+	});
 });
 
 describe("electron window adapter", () => {
