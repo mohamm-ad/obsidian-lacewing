@@ -2,6 +2,7 @@ import { PluginSettingTab } from "obsidian";
 import type { App, SettingDefinitionItem } from "obsidian";
 import {
 	isSmartFadeTrigger,
+	isContrastShieldLevel,
 	opacityPercent,
 	smartFadeTrigger,
 	smartFadeTriggerOverrides,
@@ -19,6 +20,7 @@ const SMART_FADE_ON_KEYBOARD_KEY = "smartFadeOnKeyboard";
 const SMART_FADE_ON_POINTER_KEY = "smartFadeOnPointer";
 const SMART_FADE_TRANSITION_DURATION_KEY = "smartFadeTransitionDuration";
 const SMART_FADE_REDUCED_MOTION_KEY = "smartFadeReducedMotion";
+const DEFAULT_CONTRAST_SHIELD_KEY = "defaultContrastShield";
 
 export class WindowOverlaySettingTab extends PluginSettingTab {
 	constructor(app: App, private readonly windowOverlay: WindowOverlayPlugin) {
@@ -141,8 +143,28 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 				],
 			},
 			{
+				type: "group",
+				heading: "Contrast shield",
+				items: [
+					{
+						name: "Default strength",
+						desc: "Add a theme-aware backing surface behind Markdown content to reduce distraction from what is behind the window. This does not change window opacity or your theme.",
+						control: {
+							type: "dropdown",
+							key: DEFAULT_CONTRAST_SHIELD_KEY,
+							options: {
+								none: "None",
+								subtle: "Subtle",
+								medium: "Medium",
+								strong: "Strong",
+							},
+						},
+					},
+				],
+			},
+			{
 				name: "Restore every managed overlay",
-				desc: "Turn off Smart Fade, set every open window to 100% opacity, and turn off pinning.",
+				desc: "Turn off smart fade and contrast shields, set every open window to 100% opacity, and turn off pinning.",
 				render: (setting) => {
 					setting.addButton((button) =>
 						button.setButtonText("Restore all").onClick(() => {
@@ -160,6 +182,9 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 			return opacityPercent(
 				this.windowOverlay.currentSettings.defaultOverlayOpacity,
 			);
+		}
+		if (key === DEFAULT_CONTRAST_SHIELD_KEY) {
+			return this.windowOverlay.currentSettings.defaultContrastShield;
 		}
 		switch (key) {
 			case SMART_FADE_ENABLED_KEY:
@@ -187,6 +212,10 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 	override setControlValue(key: string, value: unknown): void {
 		if (key === DEFAULT_OPACITY_KEY && typeof value === "number") {
 			this.windowOverlay.setDefaultOverlayOpacity(value / 100);
+			return;
+		}
+		if (key === DEFAULT_CONTRAST_SHIELD_KEY && isContrastShieldLevel(value)) {
+			this.windowOverlay.setDefaultContrastShield(value);
 			return;
 		}
 

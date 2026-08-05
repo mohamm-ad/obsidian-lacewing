@@ -3,6 +3,7 @@ import type { App } from "obsidian";
 import {
 	cloneWindowPreference,
 	isSmartFadeTrigger,
+	isContrastShieldLevel,
 	opacityPercent,
 	smartFadeTrigger,
 	smartFadeTriggerOverrides,
@@ -21,6 +22,7 @@ import {
 	persistenceLabel,
 	resetWindowPreference,
 	smartFadeStatus,
+	updateContrastShieldOverride,
 	updateSmartFadeOverrides,
 	updateWindowPreference,
 } from "./window-manager-model";
@@ -116,6 +118,12 @@ export class WindowManagerModal extends Modal {
 				text: descriptor.smartFadeState === "active" ? "Active" : "Idle",
 			});
 		}
+		if (descriptor.contrastShield !== "none") {
+			badges.createSpan({
+				cls: "window-overlay-badge is-contrast-shield",
+				text: `Shield: ${this.capitalize(descriptor.contrastShield)}`,
+			});
+		}
 
 		const status = persistenceLabel(
 			descriptor.persistence,
@@ -151,6 +159,16 @@ export class WindowManagerModal extends Modal {
 						);
 					});
 			});
+
+		this.renderContrastShield(
+			card,
+			descriptor,
+			() => current,
+			(preference) => {
+				current = preference;
+			},
+			statusEl,
+		);
 
 		this.renderSmartFade(
 			card,
@@ -211,6 +229,51 @@ export class WindowManagerModal extends Modal {
 				text: descriptor.error,
 			});
 		}
+	}
+
+	private renderContrastShield(
+		card: HTMLElement,
+		descriptor: WindowTargetDescriptor,
+		getCurrent: () => WindowPreference,
+		setCurrent: (preference: WindowPreference) => void,
+		statusEl: HTMLElement,
+	): void {
+		const inheritedPreference = updateContrastShieldOverride(
+			getCurrent(),
+			undefined,
+		);
+		const inheritedLevel = this.actions.resolveContrastShield(
+			descriptor,
+			inheritedPreference,
+		);
+		new Setting(card)
+			.setName("Contrast shield")
+			.setDesc("Add a theme-aware backing surface behind Markdown content. It improves readability, but whole-window opacity still affects the text.")
+			.setDisabled(!descriptor.supported)
+			.addDropdown((dropdown) => {
+				dropdown
+					.setDisabled(!descriptor.supported)
+					.addOptions({
+						inherit: `Use global (${this.capitalize(inheritedLevel)})`,
+						none: "None",
+						subtle: "Subtle",
+						medium: "Medium",
+						strong: "Strong",
+					})
+					.setValue(getCurrent().contrastShield ?? "inherit")
+					.onChange((value) => {
+						if (value !== "inherit" && !isContrastShieldLevel(value)) {
+							return;
+						}
+						const current = updateContrastShieldOverride(
+							getCurrent(),
+							value === "inherit" ? undefined : value,
+						);
+						setCurrent(current);
+						this.applyFromControl(descriptor, current);
+						this.updatePersistenceStatus(descriptor, statusEl);
+					});
+			});
 	}
 
 	private renderSmartFade(
@@ -471,6 +534,10 @@ export class WindowManagerModal extends Modal {
 
 	private formatTransitionDuration(milliseconds: number): string {
 		return milliseconds === 0 ? "Instant" : `${milliseconds} ms`;
+	}
+
+	private capitalize(value: string): string {
+		return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 	}
 
 	private applyFromControl(

@@ -5,6 +5,7 @@ import {
 	opacityPercent,
 	type SmartFadeSettings,
 	type SmartFadeOverrides,
+	type ContrastShieldLevel,
 	type WindowPreference,
 } from "../model/settings";
 import type { PersistenceIdentity } from "../model/window-target";
@@ -55,6 +56,19 @@ export function clearSmartFadeOverrides(
 ): WindowPreference {
 	const preference = cloneWindowPreference(current);
 	delete preference.smartFade;
+	return preference;
+}
+
+export function updateContrastShieldOverride(
+	current: WindowPreference,
+	level: ContrastShieldLevel | undefined,
+): WindowPreference {
+	const preference = cloneWindowPreference(current);
+	if (level === undefined) {
+		delete preference.contrastShield;
+	} else {
+		preference.contrastShield = level;
+	}
 	return preference;
 }
 

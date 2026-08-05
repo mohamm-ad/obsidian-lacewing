@@ -68,6 +68,59 @@
 	color: var(--text-normal);
 }
 
+.window-overlay-badge.is-contrast-shield {
+	background: var(--background-modifier-border-hover);
+	color: var(--text-normal);
+}
+
+html[data-window-overlay-contrast-shield] body {
+	--window-overlay-shield-base: var(--background-primary-alt);
+}
+
+html[data-window-overlay-contrast-shield] body.theme-light {
+	--window-overlay-shield-base: #fff;
+}
+
+html[data-window-overlay-contrast-shield] body.theme-dark {
+	--window-overlay-shield-base: #000;
+}
+
+html[data-window-overlay-contrast-shield="subtle"] body {
+	--window-overlay-shield-color: color-mix(
+		in srgb,
+		var(--background-primary) 88%,
+		var(--window-overlay-shield-base)
+	);
+}
+
+html[data-window-overlay-contrast-shield="medium"] body {
+	--window-overlay-shield-color: color-mix(
+		in srgb,
+		var(--background-primary) 72%,
+		var(--window-overlay-shield-base)
+	);
+}
+
+html[data-window-overlay-contrast-shield="strong"] body {
+	--window-overlay-shield-color: color-mix(
+		in srgb,
+		var(--background-primary) 48%,
+		var(--window-overlay-shield-base)
+	);
+}
+
+html[data-window-overlay-contrast-shield]
+	.workspace-leaf-content[data-type="markdown"]
+	.view-content,
+html[data-window-overlay-contrast-shield]
+	.workspace-leaf-content[data-type="markdown"]
+	.markdown-source-view,
+html[data-window-overlay-contrast-shield]
+	.workspace-leaf-content[data-type="markdown"]
+	.markdown-reading-view {
+	background-color: var(--window-overlay-shield-color);
+}
+
 .window-overlay-status {
 	margin-top: var(--size-2-2);
 	color: var(--text-faint);

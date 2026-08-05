@@ -5,6 +5,7 @@ import {
 	resetWindowPreference,
 	smartFadeStatus,
 	updateSmartFadeOverrides,
+	updateContrastShieldOverride,
 	updateWindowPreference,
 } from "../src/ui/window-manager-model";
 
@@ -17,6 +18,18 @@ describe("window manager model", () => {
 			),
 		).toEqual({ opacity: 0.5, pinned: true });
 		expect(resetWindowPreference()).toEqual({ opacity: 1, pinned: false });
+	});
+
+	it("sets and clears a contrast shield without losing other preferences", () => {
+		const current = {
+			opacity: 0.8,
+			pinned: true,
+			smartFade: { enabled: true },
+		};
+		const updated = updateContrastShieldOverride(current, "medium");
+
+		expect(updated).toEqual({ ...current, contrastShield: "medium" });
+		expect(updateContrastShieldOverride(updated, undefined)).toEqual(current);
 	});
 
 	it("summarizes active, idle, and disabled smart fade states", () => {
