@@ -30,7 +30,7 @@ describe("preference store", () => {
 
 		expect(saved).toEqual([
 			{
-				schemaVersion: 3,
+				schemaVersion: 4,
 				defaultOverlayOpacity: 0.85,
 				smartFadeDefaults: {
 					enabled: false,
@@ -41,6 +41,8 @@ describe("preference store", () => {
 					fadeOnInactivity: true,
 					brightenOnKeyboard: true,
 					brightenOnPointer: true,
+					transitionDurationMs: 180,
+					respectReducedMotion: true,
 				},
 				main: { opacity: 0.5, pinned: true },
 				notePopouts: {},

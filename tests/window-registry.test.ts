@@ -137,6 +137,8 @@ describe("window registry", () => {
 				fadeOnInactivity: true,
 				brightenOnKeyboard: true,
 				brightenOnPointer: true,
+				transitionDurationMs: 0,
+				respectReducedMotion: true,
 			}),
 		);
 
@@ -164,6 +166,8 @@ describe("window registry", () => {
 				fadeOnInactivity: true,
 				brightenOnKeyboard: true,
 				brightenOnPointer: true,
+				transitionDurationMs: 0,
+				respectReducedMotion: true,
 			}),
 		);
 
@@ -197,6 +201,8 @@ describe("window registry", () => {
 				fadeOnInactivity: true,
 				brightenOnKeyboard: true,
 				brightenOnPointer: true,
+				transitionDurationMs: 0,
+				respectReducedMotion: true,
 			}),
 		).toBe(true);
 		expect(nativeWindow.opacity).toBe(0.55);

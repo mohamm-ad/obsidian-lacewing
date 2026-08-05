@@ -29,6 +29,8 @@ describe("window manager model", () => {
 			fadeOnInactivity: true,
 			brightenOnKeyboard: true,
 			brightenOnPointer: true,
+			transitionDurationMs: 0,
+			respectReducedMotion: true,
 		};
 
 		expect(smartFadeStatus(settings, "active")).toBe("Active · 90%");

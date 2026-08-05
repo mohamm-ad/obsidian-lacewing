@@ -26,6 +26,8 @@ function descriptor(
 			fadeOnInactivity: true,
 			brightenOnKeyboard: true,
 			brightenOnPointer: true,
+			transitionDurationMs: 0,
+			respectReducedMotion: true,
 		},
 		smartFadeState: "active",
 		effectiveOpacity: smartFadeEnabled ? 0.9 : preference.opacity,

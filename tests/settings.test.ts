@@ -3,17 +3,18 @@ import {
 	DEFAULT_OVERLAY_OPACITY,
 	DEFAULT_SMART_FADE_SETTINGS,
 	MAX_IDLE_DELAY_MS,
+	MAX_TRANSITION_DURATION_MS,
 	MAX_OPACITY,
 	MIN_OPACITY,
 	adjustOpacity,
 	clampOpacity,
 	migrateNotePreference,
 	normalizeSettings,
+	opacityPercent,
+	removeNotePreference,
 	resolveSmartFadeSettings,
 	smartFadeTrigger,
 	smartFadeTriggerOverrides,
-	opacityPercent,
-	removeNotePreference,
 } from "../src/model/settings";
 import {
 	notePathFromWindowKey,
@@ -50,7 +51,7 @@ describe("settings normalization", () => {
 		});
 
 		expect(settings.defaultOverlayOpacity).toBe(MIN_OPACITY);
-		expect(settings.schemaVersion).toBe(3);
+		expect(settings.schemaVersion).toBe(4);
 		expect(settings.smartFadeDefaults).toEqual(DEFAULT_SMART_FADE_SETTINGS);
 		expect(settings.main).toBeNull();
 		expect(settings.notePopouts).toEqual({
@@ -66,7 +67,7 @@ describe("settings normalization", () => {
 			notePopouts: {},
 		});
 
-		expect(settings.schemaVersion).toBe(3);
+		expect(settings.schemaVersion).toBe(4);
 		expect(settings.smartFadeDefaults.enabled).toBe(false);
 		expect(settings.main).toEqual({ opacity: 0.8, pinned: true });
 	});
@@ -85,12 +86,49 @@ describe("settings normalization", () => {
 			},
 		});
 
-		expect(settings.schemaVersion).toBe(3);
+		expect(settings.schemaVersion).toBe(4);
+		expect(settings.smartFadeDefaults.transitionDurationMs).toBe(0);
 		expect(settings.smartFadeDefaults.fadeOnBlur).toBe(false);
 		expect(settings.smartFadeDefaults.fadeOnInactivity).toBe(true);
 		expect(smartFadeTrigger(settings.smartFadeDefaults)).toBe(
 			"inactivity-only",
 		);
+	});
+
+	it("migrates schema version 3 with instant transitions", () => {
+		const settings = normalizeSettings({
+			schemaVersion: 3,
+			smartFadeDefaults: {
+				...DEFAULT_SMART_FADE_SETTINGS,
+				transitionDurationMs: undefined,
+			},
+		});
+
+		expect(settings.schemaVersion).toBe(4);
+		expect(settings.smartFadeDefaults.transitionDurationMs).toBe(0);
+		expect(settings.smartFadeDefaults.respectReducedMotion).toBe(true);
+	});
+
+	it("clamps transition duration and validates reduced-motion settings", () => {
+		const settings = normalizeSettings({
+			schemaVersion: 4,
+			smartFadeDefaults: {
+				...DEFAULT_SMART_FADE_SETTINGS,
+				transitionDurationMs: 10_000,
+				respectReducedMotion: false,
+			},
+			main: {
+				opacity: 0.8,
+				pinned: false,
+				smartFade: { transitionDurationMs: -50 },
+			},
+		});
+
+		expect(settings.smartFadeDefaults.transitionDurationMs).toBe(
+			MAX_TRANSITION_DURATION_MS,
+		);
+		expect(settings.smartFadeDefaults.respectReducedMotion).toBe(false);
+		expect(settings.main?.smartFade?.transitionDurationMs).toBe(0);
 	});
 
 	it("maps each fade trigger to independent focus and inactivity flags", () => {

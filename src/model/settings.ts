@@ -1,4 +1,4 @@
-export const SETTINGS_SCHEMA_VERSION = 3 as const;
+export const SETTINGS_SCHEMA_VERSION = 4 as const;
 export const MIN_OPACITY = 0.5;
 export const MAX_OPACITY = 1;
 export const OPACITY_STEP = 0.05;
@@ -6,6 +6,9 @@ export const DEFAULT_OVERLAY_OPACITY = 0.85;
 export const MIN_IDLE_DELAY_MS = 250;
 export const MAX_IDLE_DELAY_MS = 10_000;
 export const DEFAULT_IDLE_DELAY_MS = 1_250;
+export const MIN_TRANSITION_DURATION_MS = 0;
+export const MAX_TRANSITION_DURATION_MS = 500;
+export const DEFAULT_TRANSITION_DURATION_MS = 180;
 export const MAIN_WINDOW_KEY = "main";
 
 export interface SmartFadeSettings {
@@ -17,6 +20,8 @@ export interface SmartFadeSettings {
 	fadeOnInactivity: boolean;
 	brightenOnKeyboard: boolean;
 	brightenOnPointer: boolean;
+	transitionDurationMs: number;
+	respectReducedMotion: boolean;
 }
 
 export type SmartFadeOverrides = Partial<SmartFadeSettings>;
@@ -61,6 +66,8 @@ export const DEFAULT_SMART_FADE_SETTINGS: Readonly<SmartFadeSettings> = {
 	fadeOnInactivity: true,
 	brightenOnKeyboard: true,
 	brightenOnPointer: true,
+	transitionDurationMs: DEFAULT_TRANSITION_DURATION_MS,
+	respectReducedMotion: true,
 };
 
 export const DEFAULT_SETTINGS: Readonly<WindowOverlaySettings> = {
@@ -116,6 +123,22 @@ export function clampIdleDelay(
 	);
 }
 
+export function clampTransitionDuration(
+	value: unknown,
+	fallback = DEFAULT_TRANSITION_DURATION_MS,
+): number {
+	if (typeof value !== "number" || !Number.isFinite(value)) {
+		return fallback;
+	}
+
+	return Math.round(
+		Math.min(
+			MAX_TRANSITION_DURATION_MS,
+			Math.max(MIN_TRANSITION_DURATION_MS, value),
+		),
+	);
+}
+
 export function normalizeSmartFadeSettings(
 	value: unknown,
 	fallback: Readonly<SmartFadeSettings> = DEFAULT_SMART_FADE_SETTINGS,
@@ -154,6 +177,14 @@ export function normalizeSmartFadeSettings(
 			typeof record.brightenOnPointer === "boolean"
 				? record.brightenOnPointer
 				: fallback.brightenOnPointer,
+		transitionDurationMs: clampTransitionDuration(
+			record.transitionDurationMs,
+			fallback.transitionDurationMs,
+		),
+		respectReducedMotion:
+			typeof record.respectReducedMotion === "boolean"
+				? record.respectReducedMotion
+				: fallback.respectReducedMotion,
 	};
 }
 
@@ -171,6 +202,7 @@ export function normalizeSmartFadeOverrides(
 		"fadeOnInactivity",
 		"brightenOnKeyboard",
 		"brightenOnPointer",
+		"respectReducedMotion",
 	] as const) {
 		if (typeof value[key] === "boolean") {
 			overrides[key] = value[key];
@@ -183,6 +215,14 @@ export function normalizeSmartFadeOverrides(
 	}
 	if (typeof value.idleDelayMs === "number" && Number.isFinite(value.idleDelayMs)) {
 		overrides.idleDelayMs = clampIdleDelay(value.idleDelayMs);
+	}
+	if (
+		typeof value.transitionDurationMs === "number" &&
+		Number.isFinite(value.transitionDurationMs)
+	) {
+		overrides.transitionDurationMs = clampTransitionDuration(
+			value.transitionDurationMs,
+		);
 	}
 
 	return Object.keys(overrides).length > 0 ? overrides : undefined;
@@ -264,6 +304,12 @@ export function normalizeSettings(value: unknown): WindowOverlaySettings {
 			}
 		}
 	}
+	const schemaVersion =
+		typeof value.schemaVersion === "number" ? value.schemaVersion : null;
+	const smartFadeFallback =
+		schemaVersion !== null && schemaVersion < SETTINGS_SCHEMA_VERSION
+			? { ...DEFAULT_SMART_FADE_SETTINGS, transitionDurationMs: 0 }
+			: DEFAULT_SMART_FADE_SETTINGS;
 
 	return {
 		schemaVersion: SETTINGS_SCHEMA_VERSION,
@@ -271,7 +317,10 @@ export function normalizeSettings(value: unknown): WindowOverlaySettings {
 			value.defaultOverlayOpacity,
 			DEFAULT_OVERLAY_OPACITY,
 		),
-		smartFadeDefaults: normalizeSmartFadeSettings(value.smartFadeDefaults),
+		smartFadeDefaults: normalizeSmartFadeSettings(
+			value.smartFadeDefaults,
+			smartFadeFallback,
+		),
 		main: isPreferenceRecord(value.main)
 			? normalizeWindowPreference(value.main)
 			: null,
