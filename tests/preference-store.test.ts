@@ -30,8 +30,9 @@ describe("preference store", () => {
 
 		expect(saved).toEqual([
 			{
-				schemaVersion: 4,
+				schemaVersion: 5,
 				defaultOverlayOpacity: 0.85,
+				defaultContrastShield: "none",
 				smartFadeDefaults: {
 					enabled: false,
 					activeOpacity: 0.92,
@@ -49,6 +50,25 @@ describe("preference store", () => {
 			},
 		]);
 		expect(store.resolve(identity)?.opacity).toBe(0.5);
+	});
+
+	it("persists and resolves contrast shield defaults and overrides", async () => {
+		const save = vi.fn(async () => {});
+		const store = new PreferenceStore(null, save, 100, timerHost);
+		const main = { key: "main", reason: "main" } as const;
+		store.setDefaultContrastShield("medium");
+		store.setPreference(main, {
+			opacity: 0.8,
+			pinned: false,
+			contrastShield: "strong",
+		});
+
+		expect(store.resolveContrastShield(main)).toBe("strong");
+		expect(
+			store.resolveContrastShield({ key: null, reason: "mixed" }),
+		).toBe("medium");
+		await store.flush();
+		expect(save).toHaveBeenCalledOnce();
 	});
 
 	it("persists global smart fade defaults and resolves target overrides", async () => {

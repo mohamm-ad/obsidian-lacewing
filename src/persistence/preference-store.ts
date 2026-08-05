@@ -5,13 +5,16 @@ import {
 	cloneSettings,
 	cloneWindowPreference,
 	clampOpacity,
+	isContrastShieldLevel,
 	migrateNotePreference,
 	normalizeSettings,
 	normalizeSmartFadeSettings,
 	normalizeWindowPreference,
 	removeNotePreference,
+	resolveContrastShield,
 	resolveSmartFadeSettings,
 	type SmartFadeSettings,
+	type ContrastShieldLevel,
 	type WindowOverlaySettings,
 	type WindowPreference,
 } from "../model/settings";
@@ -75,6 +78,13 @@ export class PreferenceStore {
 		);
 	}
 
+	resolveContrastShield(identity: PersistenceIdentity): ContrastShieldLevel {
+		return resolveContrastShield(
+			this.value.defaultContrastShield,
+			this.resolve(identity),
+		);
+	}
+
 	has(identity: PersistenceIdentity): boolean {
 		return this.resolve(identity) !== null;
 	}
@@ -127,6 +137,14 @@ export class PreferenceStore {
 
 	setDefaultOverlayOpacity(opacity: number): void {
 		this.value.defaultOverlayOpacity = clampOpacity(opacity);
+		this.scheduleSave();
+	}
+
+	setDefaultContrastShield(level: ContrastShieldLevel): void {
+		if (!isContrastShieldLevel(level)) {
+			return;
+		}
+		this.value.defaultContrastShield = level;
 		this.scheduleSave();
 	}
 

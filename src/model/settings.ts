@@ -1,4 +1,4 @@
-export const SETTINGS_SCHEMA_VERSION = 4 as const;
+export const SETTINGS_SCHEMA_VERSION = 5 as const;
 export const MIN_OPACITY = 0.5;
 export const MAX_OPACITY = 1;
 export const OPACITY_STEP = 0.05;
@@ -10,6 +10,20 @@ export const MIN_TRANSITION_DURATION_MS = 0;
 export const MAX_TRANSITION_DURATION_MS = 500;
 export const DEFAULT_TRANSITION_DURATION_MS = 180;
 export const MAIN_WINDOW_KEY = "main";
+
+export type ContrastShieldLevel = "none" | "subtle" | "medium" | "strong";
+export const DEFAULT_CONTRAST_SHIELD: ContrastShieldLevel = "none";
+
+export function isContrastShieldLevel(
+	value: unknown,
+): value is ContrastShieldLevel {
+	return (
+		value === "none" ||
+		value === "subtle" ||
+		value === "medium" ||
+		value === "strong"
+	);
+}
 
 export interface SmartFadeSettings {
 	enabled: boolean;
@@ -42,11 +56,13 @@ export interface WindowPreference {
 	opacity: number;
 	pinned: boolean;
 	smartFade?: SmartFadeOverrides;
+	contrastShield?: ContrastShieldLevel;
 }
 
 export interface WindowOverlaySettings {
 	schemaVersion: typeof SETTINGS_SCHEMA_VERSION;
 	defaultOverlayOpacity: number;
+	defaultContrastShield: ContrastShieldLevel;
 	smartFadeDefaults: SmartFadeSettings;
 	main: WindowPreference | null;
 	notePopouts: Record<string, WindowPreference>;
@@ -73,6 +89,7 @@ export const DEFAULT_SMART_FADE_SETTINGS: Readonly<SmartFadeSettings> = {
 export const DEFAULT_SETTINGS: Readonly<WindowOverlaySettings> = {
 	schemaVersion: SETTINGS_SCHEMA_VERSION,
 	defaultOverlayOpacity: DEFAULT_OVERLAY_OPACITY,
+	defaultContrastShield: DEFAULT_CONTRAST_SHIELD,
 	smartFadeDefaults: DEFAULT_SMART_FADE_SETTINGS,
 	main: null,
 	notePopouts: {},
@@ -265,6 +282,9 @@ export function normalizeWindowPreference(
 	if (smartFade) {
 		preference.smartFade = smartFade;
 	}
+	if (isContrastShieldLevel(value.contrastShield)) {
+		preference.contrastShield = value.contrastShield;
+	}
 	return preference;
 }
 
@@ -277,7 +297,17 @@ export function cloneWindowPreference(
 		...(preference.smartFade
 			? { smartFade: { ...preference.smartFade } }
 			: {}),
+		...(preference.contrastShield
+			? { contrastShield: preference.contrastShield }
+			: {}),
 	};
+}
+
+export function resolveContrastShield(
+	defaultLevel: ContrastShieldLevel,
+	preference: Readonly<WindowPreference> | null,
+): ContrastShieldLevel {
+	return preference?.contrastShield ?? defaultLevel;
 }
 
 export function resolveSmartFadeSettings(
@@ -317,6 +347,9 @@ export function normalizeSettings(value: unknown): WindowOverlaySettings {
 			value.defaultOverlayOpacity,
 			DEFAULT_OVERLAY_OPACITY,
 		),
+		defaultContrastShield: isContrastShieldLevel(value.defaultContrastShield)
+			? value.defaultContrastShield
+			: DEFAULT_CONTRAST_SHIELD,
 		smartFadeDefaults: normalizeSmartFadeSettings(
 			value.smartFadeDefaults,
 			smartFadeFallback,
@@ -334,6 +367,7 @@ export function cloneSettings(
 	return {
 		schemaVersion: SETTINGS_SCHEMA_VERSION,
 		defaultOverlayOpacity: settings.defaultOverlayOpacity,
+		defaultContrastShield: settings.defaultContrastShield,
 		smartFadeDefaults: { ...settings.smartFadeDefaults },
 		main: settings.main ? cloneWindowPreference(settings.main) : null,
 		notePopouts: Object.fromEntries(

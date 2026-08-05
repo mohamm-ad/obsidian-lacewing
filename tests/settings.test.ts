@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	DEFAULT_OVERLAY_OPACITY,
+	DEFAULT_CONTRAST_SHIELD,
 	DEFAULT_SMART_FADE_SETTINGS,
 	MAX_IDLE_DELAY_MS,
 	MAX_TRANSITION_DURATION_MS,
@@ -12,6 +13,7 @@ import {
 	normalizeSettings,
 	opacityPercent,
 	removeNotePreference,
+	resolveContrastShield,
 	resolveSmartFadeSettings,
 	smartFadeTrigger,
 	smartFadeTriggerOverrides,
@@ -51,7 +53,8 @@ describe("settings normalization", () => {
 		});
 
 		expect(settings.defaultOverlayOpacity).toBe(MIN_OPACITY);
-		expect(settings.schemaVersion).toBe(4);
+		expect(settings.schemaVersion).toBe(5);
+		expect(settings.defaultContrastShield).toBe(DEFAULT_CONTRAST_SHIELD);
 		expect(settings.smartFadeDefaults).toEqual(DEFAULT_SMART_FADE_SETTINGS);
 		expect(settings.main).toBeNull();
 		expect(settings.notePopouts).toEqual({
@@ -67,7 +70,7 @@ describe("settings normalization", () => {
 			notePopouts: {},
 		});
 
-		expect(settings.schemaVersion).toBe(4);
+		expect(settings.schemaVersion).toBe(5);
 		expect(settings.smartFadeDefaults.enabled).toBe(false);
 		expect(settings.main).toEqual({ opacity: 0.8, pinned: true });
 	});
@@ -86,7 +89,7 @@ describe("settings normalization", () => {
 			},
 		});
 
-		expect(settings.schemaVersion).toBe(4);
+		expect(settings.schemaVersion).toBe(5);
 		expect(settings.smartFadeDefaults.transitionDurationMs).toBe(0);
 		expect(settings.smartFadeDefaults.fadeOnBlur).toBe(false);
 		expect(settings.smartFadeDefaults.fadeOnInactivity).toBe(true);
@@ -104,9 +107,34 @@ describe("settings normalization", () => {
 			},
 		});
 
-		expect(settings.schemaVersion).toBe(4);
+		expect(settings.schemaVersion).toBe(5);
 		expect(settings.smartFadeDefaults.transitionDurationMs).toBe(0);
 		expect(settings.smartFadeDefaults.respectReducedMotion).toBe(true);
+	});
+
+	it("validates global and per-window contrast shield levels", () => {
+		const settings = normalizeSettings({
+			schemaVersion: 5,
+			defaultContrastShield: "medium",
+			main: {
+				opacity: 0.8,
+				pinned: false,
+				contrastShield: "strong",
+			},
+			notePopouts: {
+				"Invalid.md": {
+					opacity: 0.8,
+					pinned: false,
+					contrastShield: "opaque",
+				},
+			},
+		});
+
+		expect(settings.defaultContrastShield).toBe("medium");
+		expect(settings.main?.contrastShield).toBe("strong");
+		expect(settings.notePopouts["Invalid.md"]?.contrastShield).toBeUndefined();
+		expect(resolveContrastShield("medium", settings.main)).toBe("strong");
+		expect(resolveContrastShield("medium", null)).toBe("medium");
 	});
 
 	it("clamps transition duration and validates reduced-motion settings", () => {
