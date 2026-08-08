@@ -28,6 +28,7 @@ or macOS Space behavior.
   reduced-motion-aware transitions.
 - Add an optional theme-aware contrast shield behind Markdown content, with
   independent global and per-window strengths.
+- Show macOS shortcut hints beside relevant actions and per-window controls.
 - Reapply managed state after focus, show, restore, and visibility events.
 - Restore original native window state when the plugin unloads.
 
@@ -54,13 +55,16 @@ Default macOS hotkeys use a dedicated Command–Option–Shift family:
 
 These do not overlap the primary development vault's existing custom hotkeys.
 Change or remove them under **Settings → Hotkeys** by searching for “Window
-Overlay.”
+Overlay.” The same shortcuts appear beside their actions in plugin settings
+and in the Window Manager.
 
 ## Smart Fade
 
 Open **Settings → Window Overlay → Smart fade** to enable the behavior and set
 the active opacity, idle opacity, fade trigger, delay, and activity controls.
-Existing users remain on fixed opacity until they enable it.
+Existing users remain on fixed opacity until they enable it. Advanced controls
+stay hidden while Smart Fade is off; inactivity-only controls appear only when
+the selected trigger uses inactivity.
 
 The fade trigger offers three modes:
 

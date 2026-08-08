@@ -19,6 +19,7 @@ It verifies:
 - focus reapplication, close cleanup, late-resolution disposal, and unload
   restoration
 - manager view-model and active-window command targeting
+- macOS shortcut glyph and accessible-label formatting
 - overlay duplicate tracking
 - Smart Fade migration, clamping, active/idle timing, activity triggers,
   all three fade-trigger modes, reading navigation and scrolling, focus/blur
@@ -103,6 +104,16 @@ Overlay** in Community plugins, and reload Obsidian before testing.
 24. Disable or reload the plugin while shields are visible. Confirm every
     shield disappears completely; re-enable it and confirm persistent choices
     return. Run global restore and confirm its default becomes **None**.
+25. Open plugin settings and confirm quick actions, overlay defaults, Smart
+    Fade, readability, active-window shortcuts, and recovery are visually
+    distinct. Turn Smart Fade off and confirm its detail controls disappear;
+    turn it on and confirm the relevant controls return.
+26. Switch the fade trigger between focus-loss-only and an inactivity mode.
+    Confirm idle-delay and activity controls appear only for inactivity modes.
+27. Confirm each command's macOS shortcut is visible beside the relevant
+    settings action. Open the Window Manager and confirm its shortcut bar,
+    effective-opacity badge, pinned badge, focused highlight, and per-control
+    shortcut hints are readable in both light and dark themes.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.
