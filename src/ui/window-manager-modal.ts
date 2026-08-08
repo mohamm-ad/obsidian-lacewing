@@ -27,10 +27,7 @@ import {
 	updateSmartFadeOverrides,
 	updateWindowPreference,
 } from "./window-manager-model";
-import {
-	appendHotkeyHints,
-	descriptionWithHotkeys,
-} from "./hotkey-hint";
+import { descriptionWithHotkeys } from "./hotkey-hint";
 
 export interface WindowManagerActions {
 	isSaved(identity: PersistenceIdentity): boolean;
@@ -86,8 +83,6 @@ export class WindowManagerModal extends Modal {
 			cls: "window-overlay-intro",
 			text: "Adjust each Obsidian window independently. Changes apply immediately; keyboard shortcuts target whichever window is active.",
 		});
-		this.renderShortcutBar();
-
 		const descriptors = this.registry.descriptors;
 		if (descriptors.length === 0) {
 			this.contentEl.createEl("p", {
@@ -104,7 +99,6 @@ export class WindowManagerModal extends Modal {
 
 	private renderWindow(descriptor: WindowTargetDescriptor): void {
 		const card = this.contentEl.createDiv("window-overlay-card");
-		card.toggleClass("is-focused", descriptor.focused);
 		const header = card.createDiv("window-overlay-card-header");
 		const titleGroup = header.createDiv("window-overlay-title-group");
 		titleGroup.createEl("h3", { text: descriptor.label });
@@ -263,34 +257,6 @@ export class WindowManagerModal extends Modal {
 				text: descriptor.error,
 			});
 		}
-	}
-
-	private renderShortcutBar(): void {
-		const bar = this.contentEl.createDiv("window-overlay-shortcut-bar");
-		bar.createSpan({
-			cls: "window-overlay-shortcut-bar-title",
-			text: "Active window",
-		});
-		appendHotkeyHints(
-			bar,
-			DEFAULT_HOTKEYS.decreaseActiveWindowOpacity,
-			"Opacity −",
-		);
-		appendHotkeyHints(
-			bar,
-			DEFAULT_HOTKEYS.increaseActiveWindowOpacity,
-			"Opacity +",
-		);
-		appendHotkeyHints(
-			bar,
-			DEFAULT_HOTKEYS.toggleActiveWindowPinning,
-			"Pin",
-		);
-		appendHotkeyHints(
-			bar,
-			DEFAULT_HOTKEYS.restoreActiveWindowOpacity,
-			"Restore",
-		);
 	}
 
 	private renderContrastShield(

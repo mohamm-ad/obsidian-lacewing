@@ -14,23 +14,6 @@
 	color: var(--text-muted);
 }
 
-.window-overlay-shortcut-bar {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: var(--size-2-3) var(--size-4-3);
-	padding: var(--size-4-2) var(--size-4-3);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-primary-alt);
-}
-
-.window-overlay-shortcut-bar-title {
-	color: var(--text-normal);
-	font-size: var(--font-ui-small);
-	font-weight: var(--font-semibold);
-}
-
 .window-overlay-hotkey-list {
 	display: inline-flex;
 	align-items: center;
@@ -61,20 +44,11 @@
 	white-space: nowrap;
 }
 
-.window-overlay-shortcut-bar .window-overlay-hotkey-list {
-	margin-inline-start: 0;
-}
-
 .window-overlay-card {
 	padding: var(--size-4-3);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
 	background: var(--background-secondary);
-}
-
-.window-overlay-card.is-focused {
-	border-color: var(--interactive-accent);
-	box-shadow: inset 3px 0 0 var(--interactive-accent);
 }
 
 .window-overlay-card-header,
@@ -238,11 +212,6 @@ html[data-window-overlay-contrast-shield]
 }
 
 @media (max-width: 600px) {
-	.window-overlay-shortcut-bar {
-		align-items: flex-start;
-		flex-direction: column;
-	}
-
 	.window-overlay-hotkey-list {
 		margin-block-start: var(--size-2-2);
 		margin-inline-start: 0;

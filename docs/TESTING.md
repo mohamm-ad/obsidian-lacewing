@@ -111,9 +111,9 @@ Overlay** in Community plugins, and reload Obsidian before testing.
 26. Switch the fade trigger between focus-loss-only and an inactivity mode.
     Confirm idle-delay and activity controls appear only for inactivity modes.
 27. Confirm each command's macOS shortcut is visible beside the relevant
-    settings action. Open the Window Manager and confirm its shortcut bar,
-    effective-opacity badge, pinned badge, focused highlight, and per-control
-    shortcut hints are readable in both light and dark themes.
+    settings action. Open the Window Manager and confirm its effective-opacity,
+    pinned, and focused badges plus its per-control shortcut hints are readable
+    in both light and dark themes without adding emphasis around the full card.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.
