@@ -233,7 +233,7 @@ export default class WindowOverlayPlugin extends Plugin {
 		return this.syncQueue;
 	}
 
-	private async openCurrentNoteAsOverlay(): Promise<void> {
+	async openCurrentNoteAsOverlay(): Promise<void> {
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 		const file = view?.file;
 		if (!file || !this.registry || !this.store) {

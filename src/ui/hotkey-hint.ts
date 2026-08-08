@@ -74,10 +74,9 @@ export function descriptionWithHotkeys(
 	hotkeys: readonly Hotkey[],
 	label = "Shortcut",
 ): DocumentFragment {
-	const fragment = document.createDocumentFragment();
+	const fragment = createFragment();
 	fragment.append(description);
-	const hintContainer = document.createElement("span");
-	fragment.append(hintContainer);
+	const hintContainer = fragment.createSpan();
 	appendHotkeyHints(hintContainer, hotkeys, label);
 	return fragment;
 }

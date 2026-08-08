@@ -1,5 +1,6 @@
 import { Modal, Notice, Setting } from "obsidian";
 import type { App } from "obsidian";
+import { DEFAULT_HOTKEYS } from "../commands/default-hotkeys";
 import {
 	cloneWindowPreference,
 	isSmartFadeTrigger,
@@ -26,6 +27,10 @@ import {
 	updateSmartFadeOverrides,
 	updateWindowPreference,
 } from "./window-manager-model";
+import {
+	appendHotkeyHints,
+	descriptionWithHotkeys,
+} from "./hotkey-hint";
 
 export interface WindowManagerActions {
 	isSaved(identity: PersistenceIdentity): boolean;
@@ -79,8 +84,9 @@ export class WindowManagerModal extends Modal {
 		this.contentEl.addClass("window-overlay-manager");
 		this.contentEl.createEl("p", {
 			cls: "window-overlay-intro",
-			text: "Adjust each Obsidian window independently. Changes apply immediately.",
+			text: "Adjust each Obsidian window independently. Changes apply immediately; keyboard shortcuts target whichever window is active.",
 		});
+		this.renderShortcutBar();
 
 		const descriptors = this.registry.descriptors;
 		if (descriptors.length === 0) {
@@ -98,6 +104,7 @@ export class WindowManagerModal extends Modal {
 
 	private renderWindow(descriptor: WindowTargetDescriptor): void {
 		const card = this.contentEl.createDiv("window-overlay-card");
+		card.toggleClass("is-focused", descriptor.focused);
 		const header = card.createDiv("window-overlay-card-header");
 		const titleGroup = header.createDiv("window-overlay-title-group");
 		titleGroup.createEl("h3", { text: descriptor.label });
@@ -106,16 +113,26 @@ export class WindowManagerModal extends Modal {
 			cls: "window-overlay-badge",
 			text: descriptor.kind === "main" ? "Main" : "Pop-out",
 		});
+		badges.createSpan({
+			cls: "window-overlay-badge is-opacity",
+			text: descriptor.smartFade.enabled
+				? `${this.capitalize(descriptor.smartFadeState)} ${opacityPercent(
+						descriptor.smartFadeState === "active"
+							? descriptor.smartFade.activeOpacity
+							: descriptor.smartFade.idleOpacity,
+					)}%`
+				: `${opacityPercent(descriptor.preference.opacity)}%`,
+		});
+		if (descriptor.preference.pinned) {
+			badges.createSpan({
+				cls: "window-overlay-badge is-pinned",
+				text: "Pinned",
+			});
+		}
 		if (descriptor.focused) {
 			badges.createSpan({
 				cls: "window-overlay-badge is-focused",
 				text: "Focused",
-			});
-		}
-		if (descriptor.smartFade.enabled) {
-			badges.createSpan({
-				cls: "window-overlay-badge is-smart-fade",
-				text: descriptor.smartFadeState === "active" ? "Active" : "Idle",
 			});
 		}
 		if (descriptor.contrastShield !== "none") {
@@ -137,7 +154,16 @@ export class WindowManagerModal extends Modal {
 		let current = cloneWindowPreference(descriptor.preference);
 		new Setting(card)
 			.setName("Fixed opacity")
-			.setDesc("Used whenever smart fade is off for this window.")
+			.setDesc(
+				descriptionWithHotkeys(
+					"Used whenever smart fade is off for this window.",
+					[
+						...DEFAULT_HOTKEYS.decreaseActiveWindowOpacity,
+						...DEFAULT_HOTKEYS.increaseActiveWindowOpacity,
+					],
+					"Active window",
+				),
+			)
 			.setDisabled(!descriptor.supported)
 			.addSlider((slider) => {
 				slider
@@ -157,6 +183,27 @@ export class WindowManagerModal extends Modal {
 								this.actions.isSaved(descriptor.persistence),
 							),
 						);
+					});
+			});
+
+		new Setting(card)
+			.setName("Always on top")
+			.setDesc(
+				descriptionWithHotkeys(
+					"Keep this window above other apps using macOS's normal floating level.",
+					DEFAULT_HOTKEYS.toggleActiveWindowPinning,
+					"Active window",
+				),
+			)
+			.setDisabled(!descriptor.supported)
+			.addToggle((toggle) => {
+				toggle
+					.setDisabled(!descriptor.supported)
+					.setValue(current.pinned)
+					.onChange((pinned) => {
+						current = updateWindowPreference(current, { pinned });
+						this.applyFromControl(descriptor, current);
+						this.updatePersistenceStatus(descriptor, statusEl);
 					});
 			});
 
@@ -181,28 +228,15 @@ export class WindowManagerModal extends Modal {
 		);
 
 		new Setting(card)
-			.setName("Always on top")
-			.setDesc("Keep this window above other apps on macOS.")
-			.setDisabled(!descriptor.supported)
-			.addToggle((toggle) => {
-				toggle
-					.setDisabled(!descriptor.supported)
-					.setValue(current.pinned)
-					.onChange((pinned) => {
-					current = updateWindowPreference(current, { pinned });
-					this.applyFromControl(descriptor, current);
-					statusEl.setText(
-						persistenceLabel(
-							descriptor.persistence,
-							this.actions.isSaved(descriptor.persistence),
-						),
-					);
-					});
-			});
-
-		new Setting(card)
 			.setName("Window actions")
-			.setDesc("Bring this window forward or return it to safe defaults.")
+			.setDesc(
+				descriptionWithHotkeys(
+					"Focus this window, or reset only this window to safe defaults.",
+					DEFAULT_HOTKEYS.restoreActiveWindowOpacity,
+					"Restore active",
+				),
+			)
+			.setClass("window-overlay-window-actions")
 			.setDisabled(!descriptor.supported)
 			.addButton((button) =>
 				button
@@ -231,6 +265,34 @@ export class WindowManagerModal extends Modal {
 		}
 	}
 
+	private renderShortcutBar(): void {
+		const bar = this.contentEl.createDiv("window-overlay-shortcut-bar");
+		bar.createSpan({
+			cls: "window-overlay-shortcut-bar-title",
+			text: "Active window",
+		});
+		appendHotkeyHints(
+			bar,
+			DEFAULT_HOTKEYS.decreaseActiveWindowOpacity,
+			"Opacity −",
+		);
+		appendHotkeyHints(
+			bar,
+			DEFAULT_HOTKEYS.increaseActiveWindowOpacity,
+			"Opacity +",
+		);
+		appendHotkeyHints(
+			bar,
+			DEFAULT_HOTKEYS.toggleActiveWindowPinning,
+			"Pin",
+		);
+		appendHotkeyHints(
+			bar,
+			DEFAULT_HOTKEYS.restoreActiveWindowOpacity,
+			"Restore",
+		);
+	}
+
 	private renderContrastShield(
 		card: HTMLElement,
 		descriptor: WindowTargetDescriptor,
@@ -248,7 +310,7 @@ export class WindowManagerModal extends Modal {
 		);
 		new Setting(card)
 			.setName("Contrast shield")
-			.setDesc("Add a theme-aware backing surface behind Markdown content. It improves readability, but whole-window opacity still affects the text.")
+			.setDesc("Add a theme-aware backing surface behind Markdown content. It improves readability without changing your theme; window opacity still affects the text.")
 			.setDisabled(!descriptor.supported)
 			.addDropdown((dropdown) => {
 				dropdown
