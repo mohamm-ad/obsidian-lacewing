@@ -37,8 +37,8 @@ It verifies:
 
 ## Real-vault smoke test
 
-Install into a development vault with `pnpm dev:install`, enable **Window
-Overlay** in Community plugins, and reload Obsidian before testing.
+Install into a development vault with `pnpm dev:install`, enable **Lacewing
+Window Transparency** in Community plugins, and reload Obsidian before testing.
 
 1. Open the window manager and set the main window to 80%. Confirm existing
    pop-outs do not change.

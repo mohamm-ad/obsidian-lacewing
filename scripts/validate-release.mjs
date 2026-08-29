@@ -13,8 +13,8 @@ if (versions[manifest.version] !== manifest.minAppVersion) {
 }
 
 if (
-	manifest.id !== "window-overlay" ||
-	manifest.name !== "Window Overlay" ||
+	manifest.id !== "lacewing" ||
+	manifest.name !== "Lacewing Window Transparency" ||
 	manifest.minAppVersion !== "1.13.0" ||
 	manifest.isDesktopOnly !== true
 ) {

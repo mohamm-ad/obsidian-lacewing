@@ -50,20 +50,20 @@ export default class WindowOverlayPlugin extends Plugin {
 			try {
 				await this.saveData(settings);
 			} catch (error) {
-				console.error("Window overlay could not save settings", error);
+				console.error("Lacewing could not save settings", error);
 			}
 		});
 		this.settings = this.store.settings;
 		this.addSettingTab(new WindowOverlaySettingTab(this.app, this));
 
 		if (!Platform.isDesktopApp || !Platform.isMacOS) {
-			new Notice("Window overlay currently supports Obsidian on macOS.");
+			new Notice("Lacewing currently supports Obsidian on macOS.");
 			return;
 		}
 
 		const adapter = ElectronWindowAdapter.fromRuntime();
 		if (!adapter) {
-			new Notice("Window overlay could not access electron window controls.");
+			new Notice("Lacewing could not access electron window controls.");
 			return;
 		}
 
@@ -228,7 +228,7 @@ export default class WindowOverlayPlugin extends Plugin {
 				}
 			})
 			.catch((error: unknown) => {
-				console.error("Window overlay could not refresh windows", error);
+				console.error("Lacewing could not refresh windows", error);
 			});
 		return this.syncQueue;
 	}
@@ -273,22 +273,22 @@ export default class WindowOverlayPlugin extends Plugin {
 			}
 			this.registry.focus(descriptor.runtimeId);
 		} catch (error) {
-			console.error("Window overlay could not open a note overlay", error);
-			new Notice("Window overlay could not open this note in a pop-out.");
+			console.error("Lacewing could not open a note overlay", error);
+			new Notice("Lacewing could not open this note in a pop-out.");
 		}
 	}
 
 	private reportCommandResult(result: CommandResult | undefined): void {
 		if (!result || result.status === "no-target") {
-			new Notice("Window overlay could not identify the active vault window.");
+			new Notice("Lacewing could not identify the active vault window.");
 		} else if (result.status === "unsupported") {
-			new Notice("Window overlay controls are unavailable for the active window.");
+			new Notice("Lacewing controls are unavailable for the active window.");
 		}
 	}
 
 	openWindowManager(): void {
 		if (!this.registry || !this.store) {
-			new Notice("Window overlay controls are unavailable on this system.");
+			new Notice("Lacewing controls are unavailable on this system.");
 			return;
 		}
 

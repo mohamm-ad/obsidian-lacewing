@@ -1,10 +1,10 @@
 {
-  "id": "window-overlay",
-  "name": "Window Overlay",
+  "id": "lacewing",
+  "name": "Lacewing Window Transparency",
   "version": "0.1.0",
   "minAppVersion": "1.13.0",
-  "description": "Manage opacity and pinning for individual Obsidian windows on macOS.",
+  "description": "Control the transparency and always-on-top behavior of Obsidian windows with per-window settings, Smart Fade, Contrast Shield, and quick note overlays.",
   "author": "Mohammad",
+  "authorUrl": "https://github.com/mohamm-ad",
   "isDesktopOnly": true
 }
-

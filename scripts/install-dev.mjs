@@ -23,12 +23,11 @@ if (!vaultPath || !path.isAbsolute(vaultPath) || vaultPath === path.parse(vaultP
 	throw new Error("OBSIDIAN_VAULT_PATH must be an explicit absolute vault path.");
 }
 
-const destination = path.join(vaultPath, ".obsidian", "plugins", "window-overlay");
+const destination = path.join(vaultPath, ".obsidian", "plugins", "lacewing");
 await mkdir(destination, { recursive: true });
 
 for (const file of ["main.js", "manifest.json", "styles.css"]) {
 	await copyFile(file, path.join(destination, file));
 }
 
-process.stdout.write(`Installed Window Overlay in ${destination}\n`);
-
+process.stdout.write(`Installed Lacewing Window Transparency in ${destination}\n`);

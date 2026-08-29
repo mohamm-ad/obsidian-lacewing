@@ -233,7 +233,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					),
 					{
 						name: "Customize shortcuts",
-						desc: "Open Settings → Hotkeys and search for “Window Overlay” to change or remove any shortcut.",
+						desc: "Open Settings → Hotkeys and search for “Lacewing Window Transparency” to change or remove any shortcut.",
 						aliases: ["Hotkeys", "Keyboard shortcuts"],
 					},
 				],

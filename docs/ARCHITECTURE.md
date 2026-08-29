@@ -1,6 +1,6 @@
 # Architecture
 
-Window Overlay keeps Obsidian, persistence, and native Electron concerns in
+Lacewing keeps Obsidian, persistence, and native Electron concerns in
 separate layers so unsupported native behavior cannot prevent plugin loading
 or unloading.
 

@@ -60,7 +60,7 @@ export class WindowManagerModal extends Modal {
 	}
 
 	override onOpen(): void {
-		this.setTitle("Window overlay");
+		this.setTitle("Lacewing window manager");
 		this.modalEl.addClass("window-overlay-modal");
 		this.unsubscribe = this.registry.onChange(() => {
 			if (!this.suppressRefresh) {
@@ -577,7 +577,7 @@ export class WindowManagerModal extends Modal {
 			applied = this.actions.setPreference(descriptor, preference);
 		});
 		if (!applied) {
-			new Notice("Window overlay could not update this window.");
+			new Notice("Lacewing could not update this window.");
 		}
 	}
 

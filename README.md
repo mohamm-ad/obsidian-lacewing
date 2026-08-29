@@ -1,9 +1,9 @@
-# Window Overlay
+# Lacewing — Window Transparency for Obsidian
 
-Window Overlay is a desktop-only Obsidian plugin that controls whole-window
-opacity and always-on-top state independently for the main vault window and
-each pop-out. It is designed for macOS note-taking workflows such as placing a
-lightly translucent note above a video call.
+Lacewing Window Transparency is a desktop-only Obsidian plugin that controls
+whole-window opacity and always-on-top state independently for the main vault
+window and each pop-out. It is designed for macOS note-taking workflows such
+as placing a lightly translucent note above a video call.
 
 The plugin targets Obsidian 1.13 or newer and Electron 39. It does not alter
 Obsidian's built-in translucency option, themes, traffic lights, window chrome,
@@ -39,7 +39,8 @@ their identities are ambiguous.
 ## Commands
 
 Open the manager from the picture-in-picture icon in Obsidian's left ribbon,
-from **Settings → Window Overlay → Open manager**, or from the Command Palette.
+from **Settings → Lacewing Window Transparency → Open manager**, or from the
+Command Palette.
 
 Default macOS hotkeys use a dedicated Command–Option–Shift family:
 
@@ -60,8 +61,9 @@ and in the Window Manager.
 
 ## Smart Fade
 
-Open **Settings → Window Overlay → Smart fade** to enable the behavior and set
-the active opacity, idle opacity, fade trigger, delay, and activity controls.
+Open **Settings → Lacewing Window Transparency → Smart fade** to enable the
+behavior and set the active opacity, idle opacity, fade trigger, delay, and
+activity controls.
 Existing users remain on fixed opacity until they enable it. Advanced controls
 stay hidden while Smart Fade is off; inactivity-only controls appear only when
 the selected trigger uses inactivity.
@@ -99,10 +101,10 @@ unpinned.
 
 ## Contrast Shield
 
-Open **Settings → Window Overlay → Contrast shield** to choose the global
-default: **None**, **Subtle**, **Medium**, or **Strong**. Existing users remain
-on **None** after updating. The setting previews immediately in every window
-that inherits the global default.
+Open **Settings → Lacewing Window Transparency → Contrast shield** to choose
+the global default: **None**, **Subtle**, **Medium**, or **Strong**. Existing
+users remain on **None** after updating. The setting previews immediately in
+every window that inherits the global default.
 
 To customize one window, open the Window Manager and use its **Contrast
 shield** selector. Main-window and unambiguous single-note pop-out choices are
@@ -155,7 +157,7 @@ pnpm dev:install
 ```
 
 The installer copies only `main.js`, `manifest.json`, and `styles.css` to
-`.obsidian/plugins/window-overlay`. It never copies source files or
+`.obsidian/plugins/lacewing`. It never copies source files or
 `node_modules` into the vault.
 
 Useful scripts:
