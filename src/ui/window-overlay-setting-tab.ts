@@ -5,7 +5,7 @@ import type {
 	SettingDefinition,
 	SettingDefinitionItem,
 } from "obsidian";
-import { DEFAULT_HOTKEYS } from "../commands/default-hotkeys";
+import { RECOMMENDED_HOTKEYS } from "../commands/recommended-hotkeys";
 import {
 	isSmartFadeTrigger,
 	isContrastShieldLevel,
@@ -48,7 +48,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 						"Manage open windows",
 						"Adjust the main vault window and every pop-out independently.",
 						"Open manager",
-						DEFAULT_HOTKEYS.openWindowManager,
+						RECOMMENDED_HOTKEYS.openWindowManager,
 						() => this.windowOverlay.openWindowManager(),
 						true,
 					),
@@ -56,7 +56,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 						"Open current note as an overlay",
 						"Duplicate the active Markdown note into a pinned pop-out without moving the original tab.",
 						"Open note",
-						DEFAULT_HOTKEYS.openCurrentNoteAsOverlay,
+						RECOMMENDED_HOTKEYS.openCurrentNoteAsOverlay,
 						() => {
 							void this.windowOverlay.openCurrentNoteAsOverlay();
 						},
@@ -115,10 +115,10 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 						desc: descriptionWithHotkeys(
 							"Readable opacity while you use or read the active window.",
 							[
-								...DEFAULT_HOTKEYS.decreaseActiveWindowOpacity,
-								...DEFAULT_HOTKEYS.increaseActiveWindowOpacity,
+								...RECOMMENDED_HOTKEYS.decreaseActiveWindowOpacity,
+								...RECOMMENDED_HOTKEYS.increaseActiveWindowOpacity,
 							],
-							"Adjust",
+							"Suggested",
 						),
 						visible: () => this.smartFadeDefaults.enabled,
 						control: this.smartFadeOpacitySlider(
@@ -217,23 +217,39 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 						"Adjust opacity",
 						"Decrease or increase the active window in 5% steps. With smart fade on, these adjust active opacity.",
 						[
-							["Decrease", DEFAULT_HOTKEYS.decreaseActiveWindowOpacity],
-							["Increase", DEFAULT_HOTKEYS.increaseActiveWindowOpacity],
+							[
+								"Suggested decrease",
+								RECOMMENDED_HOTKEYS.decreaseActiveWindowOpacity,
+							],
+							[
+								"Suggested increase",
+								RECOMMENDED_HOTKEYS.increaseActiveWindowOpacity,
+							],
 						],
 					),
 					this.shortcutDefinition(
 						"Toggle always on top",
 						"Pin or unpin whichever Obsidian window is active.",
-						[["Shortcut", DEFAULT_HOTKEYS.toggleActiveWindowPinning]],
+						[
+							[
+								"Suggested",
+								RECOMMENDED_HOTKEYS.toggleActiveWindowPinning,
+							],
+						],
 					),
 					this.shortcutDefinition(
 						"Restore active window",
 						"Return the active window to 100% opacity and turn off smart fade for it.",
-						[["Shortcut", DEFAULT_HOTKEYS.restoreActiveWindowOpacity]],
+						[
+							[
+								"Suggested",
+								RECOMMENDED_HOTKEYS.restoreActiveWindowOpacity,
+							],
+						],
 					),
 					{
 						name: "Customize shortcuts",
-						desc: "Open Settings → Hotkeys and search for “Lacewing Window Transparency” to change or remove any shortcut.",
+						desc: "Suggested shortcuts are shown here but are not assigned automatically. Open Settings → Hotkeys and search for “Lacewing Window Transparency” to assign or customize them.",
 						aliases: ["Hotkeys", "Keyboard shortcuts"],
 					},
 				],
@@ -247,7 +263,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 						"Restore every managed overlay",
 						"Turn off smart fade and contrast shield, set every open window to 100%, and turn off pinning.",
 						"Restore all",
-						DEFAULT_HOTKEYS.restoreAllManagedWindows,
+						RECOMMENDED_HOTKEYS.restoreAllManagedWindows,
 						() => this.windowOverlay.restoreAllWindows(),
 					),
 				],
@@ -359,7 +375,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 	): SettingDefinition {
 		return {
 			name,
-			desc: descriptionWithHotkeys(description, hotkeys),
+			desc: descriptionWithHotkeys(description, hotkeys, "Suggested"),
 			render: (setting) => {
 				setting.addButton((button) => {
 					button.setButtonText(buttonText).onClick(onClick);

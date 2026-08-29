@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_HOTKEYS } from "../src/commands/default-hotkeys";
+import { RECOMMENDED_HOTKEYS } from "../src/commands/recommended-hotkeys";
 
-describe("default hotkeys", () => {
+describe("recommended hotkeys", () => {
 	it("uses a unique Command-Option-Shift shortcut for every command", () => {
-		const hotkeys = Object.values(DEFAULT_HOTKEYS).flat();
+		const hotkeys = Object.values(RECOMMENDED_HOTKEYS).flat();
 		const signatures = hotkeys.map(
 			(hotkey) => `${hotkey.modifiers.join("+")}+${hotkey.key}`,
 		);

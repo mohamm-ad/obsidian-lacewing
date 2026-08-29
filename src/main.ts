@@ -8,7 +8,6 @@ import {
 	ActiveWindowCommands,
 	type CommandResult,
 } from "./commands/active-window-commands";
-import { DEFAULT_HOTKEYS } from "./commands/default-hotkeys";
 import {
 	normalizeWindowPreference,
 	resolveContrastShield,
@@ -120,13 +119,11 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.addCommand({
 			id: "open-window-manager",
 			name: "Open window manager",
-			hotkeys: DEFAULT_HOTKEYS.openWindowManager,
 			callback: () => this.openWindowManager(),
 		});
 		this.addCommand({
 			id: "open-current-note-as-overlay",
 			name: "Open current note as overlay",
-			hotkeys: DEFAULT_HOTKEYS.openCurrentNoteAsOverlay,
 			callback: () => {
 				void this.openCurrentNoteAsOverlay();
 			},
@@ -134,7 +131,6 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.addCommand({
 			id: "increase-active-window-opacity",
 			name: "Increase active-window opacity",
-			hotkeys: DEFAULT_HOTKEYS.increaseActiveWindowOpacity,
 			repeatable: true,
 			callback: () =>
 				this.reportCommandResult(
@@ -144,7 +140,6 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.addCommand({
 			id: "decrease-active-window-opacity",
 			name: "Decrease active-window opacity",
-			hotkeys: DEFAULT_HOTKEYS.decreaseActiveWindowOpacity,
 			repeatable: true,
 			callback: () =>
 				this.reportCommandResult(
@@ -154,7 +149,6 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.addCommand({
 			id: "toggle-active-window-pinning",
 			name: "Toggle active-window pinning",
-			hotkeys: DEFAULT_HOTKEYS.toggleActiveWindowPinning,
 			callback: () =>
 				this.reportCommandResult(
 					this.activeCommands?.togglePinning(activeWindow),
@@ -163,7 +157,6 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.addCommand({
 			id: "restore-active-window-opacity",
 			name: "Restore active window to 100%",
-			hotkeys: DEFAULT_HOTKEYS.restoreActiveWindowOpacity,
 			callback: () =>
 				this.reportCommandResult(
 					this.activeCommands?.restoreOpacity(activeWindow),
@@ -172,7 +165,6 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.addCommand({
 			id: "restore-all-managed-windows",
 			name: "Restore every managed overlay",
-			hotkeys: DEFAULT_HOTKEYS.restoreAllManagedWindows,
 			callback: () => this.restoreAllWindows(),
 		});
 	}

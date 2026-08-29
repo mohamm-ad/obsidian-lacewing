@@ -42,9 +42,11 @@ Open the manager from the picture-in-picture icon in Obsidian's left ribbon,
 from **Settings → Lacewing Window Transparency → Open manager**, or from the
 Command Palette.
 
-Default macOS hotkeys use a dedicated Command–Option–Shift family:
+Lacewing does not claim hotkeys automatically. If you want keyboard control,
+the following macOS shortcuts are designed as a memorable
+Command–Option–Shift family:
 
-| Command | Default hotkey |
+| Command | Suggested shortcut |
 | --- | --- |
 | Open window manager | `⌘⌥⇧O` |
 | Open current note as overlay | `⌘⌥⇧N` |
@@ -54,10 +56,9 @@ Default macOS hotkeys use a dedicated Command–Option–Shift family:
 | Restore active window to 100% | `⌘⌥⇧0` |
 | Restore every managed overlay | `⌘⌥⇧R` |
 
-These do not overlap the primary development vault's existing custom hotkeys.
-Change or remove them under **Settings → Hotkeys** by searching for “Window
-Overlay.” The same shortcuts appear beside their actions in plugin settings
-and in the Window Manager.
+Assign them under **Settings → Hotkeys** by searching for “Lacewing Window
+Transparency.” The same recommendations appear beside their actions in plugin
+settings and in the Window Manager.
 
 ## Smart Fade
 

@@ -1,6 +1,6 @@
 import { Modal, Notice, Setting } from "obsidian";
 import type { App } from "obsidian";
-import { DEFAULT_HOTKEYS } from "../commands/default-hotkeys";
+import { RECOMMENDED_HOTKEYS } from "../commands/recommended-hotkeys";
 import {
 	cloneWindowPreference,
 	isSmartFadeTrigger,
@@ -152,10 +152,10 @@ export class WindowManagerModal extends Modal {
 				descriptionWithHotkeys(
 					"Used whenever smart fade is off for this window.",
 					[
-						...DEFAULT_HOTKEYS.decreaseActiveWindowOpacity,
-						...DEFAULT_HOTKEYS.increaseActiveWindowOpacity,
+						...RECOMMENDED_HOTKEYS.decreaseActiveWindowOpacity,
+						...RECOMMENDED_HOTKEYS.increaseActiveWindowOpacity,
 					],
-					"Active window",
+					"Suggested",
 				),
 			)
 			.setDisabled(!descriptor.supported)
@@ -185,8 +185,8 @@ export class WindowManagerModal extends Modal {
 			.setDesc(
 				descriptionWithHotkeys(
 					"Keep this window above other apps using macOS's normal floating level.",
-					DEFAULT_HOTKEYS.toggleActiveWindowPinning,
-					"Active window",
+					RECOMMENDED_HOTKEYS.toggleActiveWindowPinning,
+					"Suggested",
 				),
 			)
 			.setDisabled(!descriptor.supported)
@@ -226,8 +226,8 @@ export class WindowManagerModal extends Modal {
 			.setDesc(
 				descriptionWithHotkeys(
 					"Focus this window, or reset only this window to safe defaults.",
-					DEFAULT_HOTKEYS.restoreActiveWindowOpacity,
-					"Restore active",
+					RECOMMENDED_HOTKEYS.restoreActiveWindowOpacity,
+					"Suggested restore",
 				),
 			)
 			.setClass("window-overlay-window-actions")
