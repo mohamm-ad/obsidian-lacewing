@@ -218,6 +218,9 @@ Then run:
 pnpm dev:install
 ```
 
+Use a test vault when possible. `pnpm dev:install` overwrites Lacewing's
+installed runtime files in the configured vault.
+
 The installer copies only `main.js`, `manifest.json`, and `styles.css` to
 `.obsidian/plugins/lacewing`. It never copies source files or `node_modules`
 into the vault.
@@ -236,6 +239,19 @@ Useful scripts:
 See [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), and
 [Releasing](docs/RELEASING.md) for contributor documentation.
 
+## Contributing
+
+Contributions are welcome. For substantial changes, please open an issue first
+so the approach can be discussed.
+
+By submitting a contribution, you confirm that you have the right to contribute
+it and agree that it will be licensed under the MIT License.
+
 ## License
 
-[MIT](LICENSE)
+Lacewing is available under the [MIT License](LICENSE). You may use, modify,
+redistribute, sublicense, and sell copies, including for commercial purposes,
+provided that the copyright and license notices are retained.
+
+Lacewing is an independent community plugin and is not affiliated with or
+endorsed by Obsidian.
