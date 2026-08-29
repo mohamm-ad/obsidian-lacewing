@@ -19,7 +19,8 @@ It verifies:
 - focus reapplication, close cleanup, late-resolution disposal, and unload
   restoration
 - manager view-model and active-window command targeting
-- macOS shortcut glyph and accessible-label formatting
+- macOS recommended-shortcut glyph and accessible-label formatting
+- absence of automatically assigned command hotkeys
 - overlay duplicate tracking
 - Smart Fade migration, clamping, active/idle timing, activity triggers,
   all three fade-trigger modes, reading navigation and scrolling, focus/blur
@@ -110,10 +111,11 @@ Window Transparency** in Community plugins, and reload Obsidian before testing.
     turn it on and confirm the relevant controls return.
 26. Switch the fade trigger between focus-loss-only and an inactivity mode.
     Confirm idle-delay and activity controls appear only for inactivity modes.
-27. Confirm each command's macOS shortcut is visible beside the relevant
-    settings action. Open the Window Manager and confirm its effective-opacity,
-    pinned, and focused badges plus its per-control shortcut hints are readable
-    in both light and dark themes without adding emphasis around the full card.
+27. Confirm each command's suggested macOS shortcut is visible beside the
+    relevant settings action but no shortcut is assigned automatically. Open
+    the Window Manager and confirm its effective-opacity, pinned, and focused
+    badges plus its per-control shortcut hints are readable in both light and
+    dark themes without adding emphasis around the full card.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.

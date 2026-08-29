@@ -1,50 +1,134 @@
 # Lacewing — Window Transparency for Obsidian
 
-Lacewing Window Transparency is a desktop-only Obsidian plugin that controls
-whole-window opacity and always-on-top state independently for the main vault
-window and each pop-out. It is designed for macOS note-taking workflows such
-as placing a lightly translucent note above a video call.
+Keep your notes in view without losing sight of what is behind them.
 
-The plugin targets Obsidian 1.13 or newer and Electron 39. It does not alter
-Obsidian's built-in translucency option, themes, traffic lights, window chrome,
-or macOS Space behavior.
+Lacewing Window Transparency is a macOS-first Obsidian plugin for making the
+main vault window or any pop-out translucent and keeping selected windows above
+other apps. It adds per-window controls, reading-aware Smart Fade, a Contrast
+Shield, and a quick way to open the current note as an overlay.
 
-## Features
+Lacewing is useful when you want to:
 
-- Manage the current vault's main window and every pop-out from one modal.
-- Set opacity from 50% to 100% and pin any supported window at macOS's normal
-  floating level.
-- Open the active Markdown note in a new 85%-opacity pinned pop-out while
-  leaving the original tab in place.
-- Focus an existing plugin-created overlay for the same note instead of
-  opening a duplicate.
-- Persist the main-window preference for the vault and single-note pop-out
-  preferences by vault-relative path.
-- Optionally keep a window at a readable active opacity, then fade it after a
-  configurable idle delay or as soon as focus moves elsewhere.
-- Configure Smart Fade globally, then override its behavior for the main
-  window or any individual pop-out.
-- Smoothly animate active and idle opacity changes with interruptible,
-  reduced-motion-aware transitions.
-- Add an optional theme-aware contrast shield behind Markdown content, with
-  independent global and per-window strengths.
-- Show macOS shortcut hints beside relevant actions and per-window controls.
-- Reapply managed state after focus, show, restore, and visibility events.
-- Restore original native window state when the plugin unloads.
+- take notes over a video call without constantly switching windows;
+- keep a checklist or reference note above another app;
+- read from a translucent note while retaining context behind it; or
+- give different Obsidian pop-outs their own opacity and pinning behavior.
 
-Mixed-tab, duplicate-note, and non-note pop-outs remain controllable for the
-current session, but they are deliberately not restored after restart because
-their identities are ambiguous.
+## Requirements
 
-## Commands
+- macOS
+- Obsidian Desktop 1.13.0 or newer
 
-Open the manager from the picture-in-picture icon in Obsidian's left ribbon,
-from **Settings → Lacewing Window Transparency → Open manager**, or from the
-Command Palette.
+Lacewing is desktop-only because it uses guarded Electron window APIs. Windows,
+Linux, and Obsidian Mobile are not currently supported.
 
-Lacewing does not claim hotkeys automatically. If you want keyboard control,
-the following macOS shortcuts are designed as a memorable
-Command–Option–Shift family:
+## Installation
+
+### From Community Plugins
+
+After Lacewing is listed in the Community Plugins directory:
+
+1. Open **Settings → Community plugins** in Obsidian.
+2. Select **Browse** and search for **Lacewing Window Transparency**.
+3. Select **Install**, then **Enable**.
+
+### Manual installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the
+   [latest GitHub release](https://github.com/mohamm-ad/obsidian-lacewing/releases/latest).
+2. Put the three files in `<your-vault>/.obsidian/plugins/lacewing/`.
+3. Reload Obsidian.
+4. Enable **Lacewing Window Transparency** under **Settings → Community
+   plugins**.
+
+## Quick start
+
+1. Open the Window Manager from the picture-in-picture icon in the left ribbon,
+   **Settings → Lacewing Window Transparency → Open manager**, or the Command
+   Palette command **Open window manager**.
+2. Find the main window or pop-out you want to change.
+3. Set **Fixed opacity**. Values are limited to a safe range of 50–100%.
+4. Turn on **Always on top** if the window should remain above other apps.
+5. Optionally choose a **Contrast shield** or expand **Smart fade** for that
+   window.
+
+Changes apply immediately. The main window and every pop-out are controlled
+independently.
+
+### Open a note as an overlay
+
+Run **Open current note as overlay** from the Command Palette. Lacewing copies
+the active Markdown note into a new single-note pop-out without moving the
+original tab. The pop-out starts at 85% opacity by default and is pinned using
+macOS's normal floating level.
+
+Running the command again for the same note focuses the existing Lacewing
+overlay instead of opening a duplicate. Change the starting opacity under
+**Settings → Lacewing Window Transparency → Overlay defaults**.
+
+## Window Manager
+
+Each card represents one Obsidian window and shows whether it is the main
+window or a pop-out, focused, pinned, and using Smart Fade or a Contrast Shield.
+
+Controls for an unambiguous target are saved automatically:
+
+- the current vault's main window is saved under a stable main-window key;
+- a pop-out containing one unique Markdown note is saved by that note's
+  vault-relative path; and
+- mixed-tab, duplicate-note, and non-note pop-outs remain session-only because
+  they cannot be restored unambiguously.
+
+Saved note preferences follow file and folder renames and are removed after
+deletion.
+
+## Smart Fade
+
+Smart Fade switches a window between a readable active opacity and a more
+transparent idle opacity. Enable and configure the global default under
+**Settings → Lacewing Window Transparency → Smart fade**. Expand **Smart fade**
+on any Window Manager card to inherit the global behavior or override it for
+that window.
+
+Three triggers are available:
+
+- **Inactivity and focus loss** fades after the idle delay or immediately when
+  another app receives focus.
+- **Focus loss only** keeps a focused window readable indefinitely. This is the
+  best choice when you often read without typing or scrolling.
+- **Inactivity only** uses the idle timer without fading immediately when focus
+  moves elsewhere.
+
+Typing, navigation keys such as arrows and Page Up or Down, clicks, and mouse,
+trackpad, or scrollbar scrolling can all count as reading activity. These
+activity types can be enabled independently.
+
+Opacity changes can be instant or smoothly animated from 0–500 ms. Lacewing
+can also honor the macOS **Reduce Motion** accessibility setting.
+
+## Contrast Shield
+
+Whole-window opacity affects text as well as the window background. Contrast
+Shield adds a theme-aware backing surface behind Markdown content to improve
+separation from a busy call or video behind the note.
+
+Choose **None**, **Subtle**, **Medium**, or **Strong** globally under
+**Settings → Lacewing Window Transparency → Readability**, then override the
+level on individual windows in the Window Manager.
+
+Contrast Shield affects Markdown source, Live Preview, and Reading view. It
+does not alter your theme, links, selection, embeds, sidebars, window chrome,
+or Obsidian's built-in translucency setting.
+
+## Commands and suggested shortcuts
+
+Lacewing does not claim hotkeys automatically. To assign one, open **Settings →
+Hotkeys**, search for **Lacewing Window Transparency**, select the plus button
+beside a command, and press the shortcut you want.
+
+The following macOS suggestions use one memorable Command–Option–Shift family.
+They also appear beside the relevant actions in Lacewing settings and the
+Window Manager.
 
 | Command | Suggested shortcut |
 | --- | --- |
@@ -56,87 +140,64 @@ Command–Option–Shift family:
 | Restore active window to 100% | `⌘⌥⇧0` |
 | Restore every managed overlay | `⌘⌥⇧R` |
 
-Assign them under **Settings → Hotkeys** by searching for “Lacewing Window
-Transparency.” The same recommendations appear beside their actions in plugin
-settings and in the Window Manager.
+The opacity commands change fixed opacity when Smart Fade is off. When Smart
+Fade is on, they change the active opacity for the current window.
 
-## Smart Fade
-
-Open **Settings → Lacewing Window Transparency → Smart fade** to enable the
-behavior and set the active opacity, idle opacity, fade trigger, delay, and
-activity controls.
-Existing users remain on fixed opacity until they enable it. Advanced controls
-stay hidden while Smart Fade is off; inactivity-only controls appear only when
-the selected trigger uses inactivity.
-
-The fade trigger offers three modes:
-
-- **Inactivity and focus loss** fades after the idle delay or immediately when
-  focus moves elsewhere. This is the default and preserves earlier behavior.
-- **Focus loss only** keeps a focused window bright indefinitely, which is
-  useful for reading, then fades when you switch back to another app.
-- **Inactivity only** uses the idle timer but does not fade immediately when
-  focus moves elsewhere.
-
-Typing, arrow and paging keys, clicks, and scrolling with a mouse, trackpad, or
-scrollbar can all reset the inactivity timer when their activity controls are
-enabled.
-
-Set **Transition duration** from 0–500 ms. A value around 180 ms feels quick
-without looking abrupt; 0 ms is instant. **Respect reduced motion** makes
-changes instant whenever Reduce Motion is enabled in macOS Accessibility
-settings. Existing installations migrate to 0 ms so updating the plugin does
-not silently change its visual behavior; new installations default to 180 ms.
-
-In the Window Manager, expand **Smart fade** on any window to inherit the
-global setting or customize that window. The live badge shows whether the
-window is Active or Idle. **Use global settings** removes only the Smart Fade
-overrides; it does not discard that window's fixed opacity or pin preference.
-
-While Smart Fade is enabled, the increase/decrease opacity hotkeys adjust the
-active opacity for the current window. **Restore active window to 100%** is a
-recovery action: it disables Smart Fade for that window and restores full
-opacity. **Restore every managed overlay** disables Smart Fade globally and
-Contrast Shield globally, then returns all managed windows to 100% and
-unpinned.
-
-## Contrast Shield
-
-Open **Settings → Lacewing Window Transparency → Contrast shield** to choose
-the global default: **None**, **Subtle**, **Medium**, or **Strong**. Existing
-users remain on **None** after updating. The setting previews immediately in
-every window that inherits the global default.
-
-To customize one window, open the Window Manager and use its **Contrast
-shield** selector. Main-window and unambiguous single-note pop-out choices are
-saved; mixed-tab, duplicate-note, and non-note pop-outs remain session-only.
-Choose **Use global** to remove only that window's shield override.
-
-The shield adds a theme-aware backing color behind Markdown source, Live
-Preview, and Reading view content. It does not alter your theme, Obsidian's
-built-in translucency setting, sidebars, window chrome, selection, links, or
-embedded content. Because macOS applies opacity to the complete window, the
-shield improves local contrast but cannot make text fully opaque on its own.
-
-## Safety model
+## Recovery and safety
 
 - Opacity is clamped to 50–100% at every input and persistence boundary.
-- Smart Fade timers are cancelled when settings change, a window closes, or
-  the plugin unloads.
-- Opacity transitions are interruptible and are bypassed during emergency
-  restore, native show/restore correction, and plugin unload.
-- Contrast Shield uses a plugin-owned document marker and restores any prior
-  marker exactly when a window closes or the plugin unloads.
-- The plugin snapshots opacity and pin state before adopting a native window.
-- Disabling or reloading the plugin restores those original values.
-- Electron access is isolated in a guarded adapter that resolves
-  `@electron/remote`; the removed `electron.remote` API is never used.
-- Unsupported native operations are contained and surfaced in the manager or
-  an Obsidian notice.
-- Pinning uses `floating` only. All-Spaces, click-through, vibrancy,
-  above-full-screen behavior, and screen-capture exclusion are out of scope.
+- **Restore active window to 100%** disables Smart Fade for that window and
+  restores full opacity.
+- **Restore every managed overlay** disables Smart Fade and Contrast Shield,
+  restores every open managed window to 100%, and turns off pinning.
+- Lacewing snapshots a window's native opacity and always-on-top state before
+  managing it, then restores that state when the plugin unloads.
+- Unsupported native operations are contained and reported without preventing
+  the plugin from loading or unloading.
 
-## Local development
+## Limitations
+
+- Always-on-top uses macOS's normal floating level. It does not place a window
+  above full-screen apps or move it to every Space.
+- Click-through, vibrancy, capture exclusion, and custom window chrome are not
+  supported.
+- Lacewing does not modify Obsidian's built-in translucency setting.
+- Only unambiguous main-window and single-note preferences persist across
+  restarts.
+
+## Privacy
+
+Lacewing has no analytics, accounts, network requests, or remote services. It
+stores settings locally in the vault's plugin data and never reads note
+contents beyond the file identity Obsidian exposes for window tracking.
+
+## Troubleshooting
+
+### A window does not change
+
+Confirm that you are using Obsidian Desktop on macOS and Obsidian 1.13.0 or
+newer. Reload Obsidian after installation. If a card says native controls are
+unavailable, restart Obsidian and try again.
+
+### Text is difficult to read
+
+Raise the window opacity or enable **Contrast shield**. For calls and videos, a
+good starting point is 85–90% active opacity, 60–70% idle opacity, and a Subtle
+or Medium shield.
+
+### A window feels stuck above other apps
+
+Turn off **Always on top** for that window or run **Restore every managed
+overlay**. Disabling Lacewing also restores the native window state captured
+when it loaded.
+
+### A pop-out preference was not restored
+
+Only a pop-out containing one unique Markdown note has a persistent identity.
+Mixed-tab, duplicate-note, and non-note pop-outs are labeled **Session only** in
+the Window Manager.
+
+## Development
 
 Requirements: Node.js 20 or 22 and pnpm 9.6.0.
 
@@ -158,8 +219,8 @@ pnpm dev:install
 ```
 
 The installer copies only `main.js`, `manifest.json`, and `styles.css` to
-`.obsidian/plugins/lacewing`. It never copies source files or
-`node_modules` into the vault.
+`.obsidian/plugins/lacewing`. It never copies source files or `node_modules`
+into the vault.
 
 Useful scripts:
 
@@ -172,9 +233,9 @@ Useful scripts:
 - `pnpm dev:install` — build and install the three runtime artifacts.
 - `pnpm release:check` — run every check and validate release artifacts.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for design boundaries and
-[docs/TESTING.md](docs/TESTING.md) for the acceptance checklist.
+See [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), and
+[Releasing](docs/RELEASING.md) for contributor documentation.
 
 ## License
 
-MIT
+[MIT](LICENSE)

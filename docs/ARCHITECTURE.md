@@ -66,10 +66,11 @@ The manager modal uses Obsidian `Modal`, `Setting`, slider, toggle, dropdown,
 and button components with theme variables and keyboard-native controls. Smart
 Fade uses progressive disclosure and exposes live active/idle state. Contrast
 Shield uses a compact dropdown with explicit inheritance and a live level
-badge. A shared hotkey-hint formatter renders the same command definitions as
-compact macOS glyphs with screen-reader labels. Plugin settings use Obsidian
-1.13's declarative, searchable settings definitions and hide dependent controls
-until they are relevant.
+badge. A shared hotkey-hint formatter renders the recommended shortcut
+definitions as compact macOS glyphs with screen-reader labels. Commands
+intentionally register without default hotkeys to avoid conflicts in community
+vaults. Plugin settings use Obsidian 1.13's declarative, searchable settings
+definitions and hide dependent controls until they are relevant.
 
 Active-window commands select targets by Obsidian's `activeWindow` DOM object.
 The command service has no Electron dependency and is unit-tested separately.
