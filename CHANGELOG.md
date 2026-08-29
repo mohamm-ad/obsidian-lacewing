@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 — 2026-08-29
+
+- Remove the redundant word "Obsidian" from the plugin description to meet
+  Community Plugins directory requirements.
+- Add release validation that prevents the restricted term from returning to
+  the manifest description.
+
 ## 1.0.0 — 2026-08-28
 
 The first public release of Lacewing Window Transparency.

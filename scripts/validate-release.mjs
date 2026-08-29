@@ -28,9 +28,12 @@ if (
 if (
 	typeof manifest.description !== "string" ||
 	manifest.description.length > 250 ||
-	!manifest.description.endsWith(".")
+	!manifest.description.endsWith(".") ||
+	/obsidian/iu.test(manifest.description)
 ) {
-	throw new Error("The manifest description must be at most 250 characters and end with a period.");
+	throw new Error(
+		'The manifest description must be at most 250 characters, end with a period, and not include "Obsidian".',
+	);
 }
 
 if (

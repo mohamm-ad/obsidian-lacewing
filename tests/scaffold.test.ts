@@ -16,5 +16,6 @@ describe("plugin manifest", () => {
 		expect(manifest.description).toEqual(expect.any(String));
 		expect((manifest.description as string).length).toBeLessThanOrEqual(250);
 		expect(manifest.description).toMatch(/\.$/u);
+		expect(manifest.description).not.toMatch(/obsidian/iu);
 	});
 });
