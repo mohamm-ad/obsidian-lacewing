@@ -1,7 +1,7 @@
 {
   "id": "lacewing",
   "name": "Lacewing Window Transparency",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "minAppVersion": "1.13.0",
   "description": "Control the transparency and always-on-top behavior of Obsidian windows with per-window settings, Smart Fade, Contrast Shield, and quick note overlays.",
   "author": "Mohammad",

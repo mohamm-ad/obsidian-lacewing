@@ -13,5 +13,8 @@ describe("plugin manifest", () => {
 			minAppVersion: "1.13.0",
 			name: "Lacewing Window Transparency",
 		});
+		expect(manifest.description).toEqual(expect.any(String));
+		expect((manifest.description as string).length).toBeLessThanOrEqual(250);
+		expect(manifest.description).toMatch(/\.$/u);
 	});
 });
