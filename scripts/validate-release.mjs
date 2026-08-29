@@ -45,7 +45,10 @@ if (manifest.name.includes(":") || /obsidian|plugin/iu.test(manifest.name)) {
 	throw new Error("The plugin name does not meet the Community Plugins requirements.");
 }
 
-if (process.env.GITHUB_REF_NAME && process.env.GITHUB_REF_NAME !== manifest.version) {
+if (
+	process.env.GITHUB_REF_TYPE === "tag" &&
+	process.env.GITHUB_REF_NAME !== manifest.version
+) {
 	throw new Error("The release tag must exactly match the manifest version.");
 }
 
