@@ -41,6 +41,25 @@ describe("opacity safety", () => {
 });
 
 describe("settings normalization", () => {
+	it("starts with focus loss only and a five-second inactivity delay", () => {
+		const settings = normalizeSettings(null);
+		expect(smartFadeTrigger(settings.smartFadeDefaults)).toBe("focus-loss-only");
+		expect(settings.smartFadeDefaults.idleDelayMs).toBe(5_000);
+	});
+
+	it("preserves saved triggers and delays from existing installations", () => {
+		const settings = normalizeSettings({
+			schemaVersion: 5,
+			smartFadeDefaults: {
+				enabled: true, fadeOnInactivity: true, fadeOnBlur: true, idleDelayMs: 1_250,
+			},
+			main: { opacity: 1, pinned: false, smartFade: { idleDelayMs: 2_000 } },
+		});
+		expect(smartFadeTrigger(settings.smartFadeDefaults)).toBe("inactivity-and-focus-loss");
+		expect(settings.smartFadeDefaults.idleDelayMs).toBe(1_250);
+		expect(resolveSmartFadeSettings(settings.smartFadeDefaults, settings.main).idleDelayMs).toBe(2_000);
+	});
+
 	it("uses safe defaults for malformed data", () => {
 		const settings = normalizeSettings({
 			defaultOverlayOpacity: 0.1,
@@ -197,6 +216,7 @@ describe("settings normalization", () => {
 				activeOpacity: 0.7,
 				idleOpacity: 0.9,
 				idleDelayMs: 50_000,
+				fadeOnInactivity: true,
 				fadeOnBlur: false,
 				brightenOnKeyboard: true,
 				brightenOnPointer: false,

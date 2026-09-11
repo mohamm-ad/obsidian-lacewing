@@ -17,7 +17,7 @@ const timerHost: SmartFadeTimerHost = {
 function settings(
 	patch: Partial<SmartFadeSettings> = {},
 ): SmartFadeSettings {
-	return { ...DEFAULT_SMART_FADE_SETTINGS, enabled: true, ...patch };
+	return { ...DEFAULT_SMART_FADE_SETTINGS, enabled: true, fadeOnInactivity: true, ...patch };
 }
 
 afterEach(() => {

@@ -62,7 +62,8 @@ Window Transparency** in Community plugins, and reload Obsidian before testing.
    return to the opacity and pin state they had before the plugin adopted them.
 9. Re-enable the plugin and confirm the main and single-note saved preferences
    return while mixed/non-note targets remain session-only.
-10. Enable **Smart fade** in plugin settings. Set active opacity to 90%, idle
+10. Enable **Global smart fade** in plugin settings and select **Inactivity and
+    focus loss**. Set active opacity to 90%, idle
     opacity to 60%, and delay to 1.25 seconds. Confirm the focused window fades
     after the delay and brightens immediately when typing or clicking.
 11. Switch repeatedly between Obsidian and another app. Confirm fade-on-blur
@@ -107,15 +108,35 @@ Window Transparency** in Community plugins, and reload Obsidian before testing.
     return. Run global restore and confirm its default becomes **None**.
 25. Open plugin settings and confirm quick actions, overlay defaults, Smart
     Fade, readability, active-window shortcuts, and recovery are visually
-    distinct. Turn Smart Fade off and confirm its detail controls disappear;
-    turn it on and confirm the relevant controls return.
+    distinct. Turn Smart Fade off and on; confirm its detail controls stay
+    visible and the page retains its scroll position and keyboard focus.
 26. Switch the fade trigger between focus-loss-only and an inactivity mode.
-    Confirm idle-delay and activity controls appear only for inactivity modes.
+    Confirm idle-delay and activity controls remain visible but are disabled
+    for focus-loss-only mode, without scrolling or losing keyboard focus.
 27. Confirm each command's suggested macOS shortcut is visible beside the
     relevant settings action but no shortcut is assigned automatically. Open
     the Window Manager and confirm its effective-opacity, pinned, and focused
     badges plus its per-control shortcut hints are readable in both light and
     dark themes without adding emphasis around the full card.
+
+28. Hover over the ribbon icon and confirm the tooltip includes **Lacewing**.
+29. With multiple cards open in the manager, expand Smart Fade, scroll down,
+    and allow an inactivity fade. Resume activity and change a control.
+    Confirm only status labels change during fades, controls stay usable,
+    and the scroll position remains stable. Collapse a section with custom
+    overrides and confirm it stays collapsed after focus or settings changes.
+30. Toggle **Global smart fade** at the top of the manager. Confirm inheriting
+    windows follow it while explicit on/off overrides remain unchanged. Check
+    that each **Use global (On/Off)** label reflects the current global state.
+31. In global settings, set active opacity to 90% and idle opacity to 80%.
+    Lower active opacity to 70%; confirm both sliders display 70%, and idle
+    cannot exceed active. Increase active to 90%; confirm idle stays at 70%
+    and can now be raised to 90%. Repeat using keyboard controls and reopen
+    settings to confirm displayed values match persisted values.
+32. In a fresh development vault, confirm Smart Fade starts off, the trigger
+    is **Focus loss only**, and selecting an inactivity trigger reveals an
+    enabled idle delay of **5 s**. Upgrade a vault with existing custom Smart
+    Fade settings and confirm its triggers, delays, and overrides are retained.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.

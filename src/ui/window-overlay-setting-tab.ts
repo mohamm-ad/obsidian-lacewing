@@ -4,6 +4,8 @@ import type {
 	Hotkey,
 	SettingDefinition,
 	SettingDefinitionItem,
+	SettingDefinitionRender,
+	SliderComponent,
 } from "obsidian";
 import { RECOMMENDED_HOTKEYS } from "../commands/recommended-hotkeys";
 import {
@@ -33,6 +35,8 @@ const SMART_FADE_REDUCED_MOTION_KEY = "smartFadeReducedMotion";
 const DEFAULT_CONTRAST_SHIELD_KEY = "defaultContrastShield";
 
 export class WindowOverlaySettingTab extends PluginSettingTab {
+	private readonly opacitySliders = new Map<string, Set<SliderComponent>>();
+
 	constructor(app: App, private readonly windowOverlay: WindowOverlayPlugin) {
 		super(app, windowOverlay);
 	}
@@ -85,12 +89,12 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 			},
 			{
 				type: "group",
-				heading: "Smart fade",
+				heading: "Global smart fade",
 				cls: "window-overlay-settings-group",
 				items: [
 					{
-						name: "Smart fade",
-						desc: "Automatically switch between a readable active state and a more transparent idle state. Turn this on to reveal its controls.",
+						name: "Enable smart fade by default",
+						desc: "Applies to all windows that use the global setting. Individual windows can override this in the Lacewing window manager.",
 						control: {
 							type: "toggle",
 							key: SMART_FADE_ENABLED_KEY,
@@ -99,7 +103,6 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					{
 						name: "Fade trigger",
 						desc: "Choose what sends a window to idle. Focus loss only is best when you often read without interacting.",
-						visible: () => this.smartFadeDefaults.enabled,
 						control: {
 							type: "dropdown",
 							key: SMART_FADE_TRIGGER_KEY,
@@ -120,26 +123,24 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 							],
 							"Suggested",
 						),
-						visible: () => this.smartFadeDefaults.enabled,
-						control: this.smartFadeOpacitySlider(
+						render: this.smartFadeOpacitySlider(
 							SMART_FADE_ACTIVE_OPACITY_KEY,
 						),
 					},
 					{
 						name: "Idle opacity",
 						desc: "See-through opacity used when the selected trigger fades the window.",
-						visible: () => this.smartFadeDefaults.enabled,
-						control: this.smartFadeOpacitySlider(
+						render: this.smartFadeOpacitySlider(
 							SMART_FADE_IDLE_OPACITY_KEY,
 						),
 					},
 					{
 						name: "Idle delay",
-						desc: "How long to wait after the last reading or editing activity.",
-						visible: () => this.usesInactivity,
+						desc: "How long to wait after the last activity. Used only with an inactivity trigger.",
 						control: {
 							type: "slider",
 							key: SMART_FADE_IDLE_DELAY_KEY,
+							disabled: () => !this.usesInactivity,
 							min: 250,
 							max: 10_000,
 							step: 250,
@@ -149,7 +150,6 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					{
 						name: "Brighten on keyboard activity",
 						desc: "Typing and navigation keys—including arrows and Page Up or Down—reset the idle timer.",
-						visible: () => this.usesInactivity,
 						control: this.smartFadeActivityToggle(
 							SMART_FADE_ON_KEYBOARD_KEY,
 						),
@@ -157,7 +157,6 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					{
 						name: "Brighten on pointer and scroll activity",
 						desc: "Clicking or scrolling with a mouse, trackpad, or scrollbar resets the idle timer.",
-						visible: () => this.usesInactivity,
 						control: this.smartFadeActivityToggle(
 							SMART_FADE_ON_POINTER_KEY,
 						),
@@ -165,7 +164,6 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					{
 						name: "Transition duration",
 						desc: "How quickly opacity changes. Use 0 ms for instant changes; 150–200 ms usually feels natural.",
-						visible: () => this.smartFadeDefaults.enabled,
 						control: {
 							type: "slider",
 							key: SMART_FADE_TRANSITION_DURATION_KEY,
@@ -179,7 +177,6 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					{
 						name: "Respect reduced motion",
 						desc: "Use instant opacity changes when Reduce Motion is enabled in macOS Accessibility settings.",
-						visible: () => this.smartFadeDefaults.enabled,
 						control: this.smartFadeToggle(
 							SMART_FADE_REDUCED_MOTION_KEY,
 						),
@@ -317,11 +314,12 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		const patch = this.smartFadePatch(key, value);
 		if (patch) {
 			this.windowOverlay.setSmartFadeDefaults(patch);
+			this.syncOpacitySliders();
 			if (
 				key === SMART_FADE_ENABLED_KEY ||
 				key === SMART_FADE_TRIGGER_KEY
 			) {
-				this.update();
+				this.refreshDomState();
 			}
 		}
 	}
@@ -330,23 +328,38 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		return this.windowOverlay.currentSettings.smartFadeDefaults;
 	}
 
-	private smartFadeOpacitySlider(key: string) {
-		return {
-			type: "slider" as const,
-			key,
-			min: 50,
-			max: 100,
-			step: 1,
-			disabled: () => !this.smartFadeDefaults.enabled,
-			displayFormat: (value: number) => `${value}%`,
+	private smartFadeOpacitySlider(key: string): SettingDefinitionRender["render"] {
+		return (setting) => {
+			const sliders = this.opacitySliders.get(key) ?? new Set<SliderComponent>();
+			this.opacitySliders.set(key, sliders);
+			let renderedSlider: SliderComponent;
+			setting.addSlider((slider) => {
+				renderedSlider = slider;
+				sliders.add(slider);
+				slider
+					.setInstant(true)
+					.setDisplayFormat((value) => `${value}%`)
+					.onChange((value) => this.setControlValue(key, value));
+			});
+			this.syncOpacitySliders();
+			return () => sliders.delete(renderedSlider);
 		};
 	}
 
+	private syncOpacitySliders(): void {
+		const settings = this.smartFadeDefaults;
+		for (const [key, sliders] of this.opacitySliders) {
+			const isIdle = key === SMART_FADE_IDLE_OPACITY_KEY;
+			const maximum = isIdle ? opacityPercent(settings.activeOpacity) : 100;
+			const value = opacityPercent(isIdle ? settings.idleOpacity : settings.activeOpacity);
+			for (const slider of sliders) {
+				slider.setLimits(50, maximum, 1).setValue(value);
+			}
+		}
+	}
+
 	private get usesInactivity(): boolean {
-		return (
-			this.smartFadeDefaults.enabled &&
-			this.smartFadeDefaults.fadeOnInactivity
-		);
+		return this.smartFadeDefaults.fadeOnInactivity;
 	}
 
 	private smartFadeActivityToggle(key: string) {
@@ -361,7 +374,6 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 		return {
 			type: "toggle" as const,
 			key,
-			disabled: () => !this.smartFadeDefaults.enabled,
 		};
 	}
 

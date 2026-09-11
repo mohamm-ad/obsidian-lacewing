@@ -1,5 +1,5 @@
 import { Modal, Notice, Setting } from "obsidian";
-import type { App } from "obsidian";
+import type { App, SliderComponent } from "obsidian";
 import { RECOMMENDED_HOTKEYS } from "../commands/recommended-hotkeys";
 import {
 	cloneWindowPreference,
@@ -26,10 +26,13 @@ import {
 	updateContrastShieldOverride,
 	updateSmartFadeOverrides,
 	updateWindowPreference,
+	windowManagerStructure,
 } from "./window-manager-model";
 import { descriptionWithHotkeys } from "./hotkey-hint";
 
 export interface WindowManagerActions {
+	getSmartFadeDefaults(): SmartFadeSettings;
+	setSmartFadeDefaults(patch: Partial<SmartFadeSettings>): void;
 	isSaved(identity: PersistenceIdentity): boolean;
 	setPreference(
 		descriptor: WindowTargetDescriptor,
@@ -49,7 +52,9 @@ export interface WindowManagerActions {
 export class WindowManagerModal extends Modal {
 	private unsubscribe: (() => void) | null = null;
 	private suppressRefresh = false;
-	private readonly openSmartFade = new Set<string>();
+	private readonly openSmartFade = new Map<string, boolean>();
+	private structure = "";
+	private readonly cards = new Map<string, HTMLElement>();
 
 	constructor(
 		app: App,
@@ -64,7 +69,7 @@ export class WindowManagerModal extends Modal {
 		this.modalEl.addClass("window-overlay-modal");
 		this.unsubscribe = this.registry.onChange(() => {
 			if (!this.suppressRefresh) {
-				this.render();
+				this.refresh();
 			}
 		});
 		this.render();
@@ -76,13 +81,67 @@ export class WindowManagerModal extends Modal {
 		this.contentEl.empty();
 	}
 
+	private refresh(): void {
+		if (windowManagerStructure(this.registry.descriptors) !== this.structure) {
+			this.render();
+		} else {
+			this.updateStatuses();
+		}
+	}
+
+	private updateStatuses(): void {
+		for (const descriptor of this.registry.descriptors) {
+			const card = this.cards.get(descriptor.runtimeId);
+			if (!card) continue;
+			card.querySelector(".is-opacity")?.setText(descriptor.smartFade.enabled
+				? smartFadeStatus(descriptor.smartFade, descriptor.smartFadeState)
+				: `${opacityPercent(descriptor.preference.opacity)}%`);
+			card.querySelector(".window-overlay-smart-fade-status")?.setText(
+				smartFadeStatus(descriptor.smartFade, descriptor.smartFadeState),
+			);
+			card.querySelector<HTMLElement>(".is-focused")?.toggle(descriptor.focused);
+			card.querySelector<HTMLElement>(".is-pinned")?.toggle(descriptor.preference.pinned);
+			const shield = card.querySelector<HTMLElement>(".is-contrast-shield");
+			shield?.setText(`Shield: ${this.capitalize(descriptor.contrastShield)}`);
+			shield?.toggle(descriptor.contrastShield !== "none");
+		}
+	}
+
 	private render(): void {
+		const scrollTop = this.contentEl.scrollTop;
+		const focusedKey = this.contentEl.ownerDocument.activeElement?.getAttribute("data-lacewing-control");
+		this.renderContents();
+		this.contentEl.querySelectorAll<HTMLElement>(".setting-item").forEach((setting) => {
+			const cardId = setting.closest<HTMLElement>("[data-window-id]")?.dataset.windowId ?? "global";
+			const name = setting.querySelector(".setting-item-name")?.textContent ?? "";
+			setting.querySelectorAll<HTMLElement>("input, select, button, .checkbox-container").forEach((control, index) => {
+				const key = `${cardId}:${name}:${index}`;
+				control.setAttribute("data-lacewing-control", key);
+				if (key === focusedKey) control.focus({ preventScroll: true });
+			});
+		});
+		this.contentEl.scrollTop = scrollTop;
+		this.structure = windowManagerStructure(this.registry.descriptors);
+		this.updateStatuses();
+	}
+
+	private renderContents(): void {
+		this.cards.clear();
 		this.contentEl.empty();
 		this.contentEl.addClass("window-overlay-manager");
 		this.contentEl.createEl("p", {
 			cls: "window-overlay-intro",
 			text: "Adjust each Obsidian window independently. Changes apply immediately; keyboard shortcuts target whichever window is active.",
 		});
+		new Setting(this.contentEl)
+			.setName("Global smart fade")
+			.setDesc("Set the default for every window. Individual window overrides take precedence. Configure more options in the plugin settings.")
+			.addToggle((toggle) => toggle
+				.setValue(this.actions.getSmartFadeDefaults().enabled)
+				.onChange((enabled) => {
+					this.runWithoutRefresh(() => this.actions.setSmartFadeDefaults({ enabled }));
+					this.render();
+				}));
 		const descriptors = this.registry.descriptors;
 		if (descriptors.length === 0) {
 			this.contentEl.createEl("p", {
@@ -99,6 +158,8 @@ export class WindowManagerModal extends Modal {
 
 	private renderWindow(descriptor: WindowTargetDescriptor): void {
 		const card = this.contentEl.createDiv("window-overlay-card");
+		this.cards.set(descriptor.runtimeId, card);
+		card.dataset.windowId = descriptor.runtimeId;
 		const header = card.createDiv("window-overlay-card-header");
 		const titleGroup = header.createDiv("window-overlay-title-group");
 		titleGroup.createEl("h3", { text: descriptor.label });
@@ -117,24 +178,18 @@ export class WindowManagerModal extends Modal {
 					)}%`
 				: `${opacityPercent(descriptor.preference.opacity)}%`,
 		});
-		if (descriptor.preference.pinned) {
-			badges.createSpan({
-				cls: "window-overlay-badge is-pinned",
-				text: "Pinned",
-			});
-		}
-		if (descriptor.focused) {
-			badges.createSpan({
-				cls: "window-overlay-badge is-focused",
-				text: "Focused",
-			});
-		}
-		if (descriptor.contrastShield !== "none") {
-			badges.createSpan({
-				cls: "window-overlay-badge is-contrast-shield",
-				text: `Shield: ${this.capitalize(descriptor.contrastShield)}`,
-			});
-		}
+		badges.createSpan({
+			cls: "window-overlay-badge is-pinned",
+			text: "Pinned",
+		});
+		badges.createSpan({
+			cls: "window-overlay-badge is-focused",
+			text: "Focused",
+		});
+		badges.createSpan({
+			cls: "window-overlay-badge is-contrast-shield",
+			text: `Shield: ${this.capitalize(descriptor.contrastShield)}`,
+		});
 
 		const status = persistenceLabel(
 			descriptor.persistence,
@@ -315,33 +370,32 @@ export class WindowManagerModal extends Modal {
 			cls: "window-overlay-smart-fade",
 		});
 		details.open =
-			this.openSmartFade.has(descriptor.runtimeId) ||
-			descriptor.preference.smartFade !== undefined;
+			this.openSmartFade.get(descriptor.runtimeId) ??
+			(descriptor.preference.smartFade !== undefined);
 		details.addEventListener("toggle", () => {
-			if (details.open) {
-				this.openSmartFade.add(descriptor.runtimeId);
-			} else {
-				this.openSmartFade.delete(descriptor.runtimeId);
+			if (details.isConnected) {
+				this.openSmartFade.set(descriptor.runtimeId, details.open);
 			}
 		});
 
 		const summary = details.createEl("summary");
 		summary.createSpan({ text: "Smart fade" });
-		const statusValue = summary.createSpan({
+		summary.createSpan({
 			cls: "window-overlay-smart-fade-status",
 			text: smartFadeStatus(descriptor.smartFade, descriptor.smartFadeState),
 		});
 		const body = details.createDiv("window-overlay-smart-fade-body");
 		let effective = { ...descriptor.smartFade };
+		let refreshOverrideControl = () => {};
 
 		const applyPatch = (patch: SmartFadeOverrides): void => {
 			const current = updateSmartFadeOverrides(getCurrent(), patch);
 			setCurrent(current);
 			effective = this.actions.resolveSmartFade(descriptor, current);
+			activeSlider.setLimits(opacityPercent(effective.idleOpacity), 100, 1);
+			idleSlider.setLimits(50, opacityPercent(effective.activeOpacity), 1);
+			refreshOverrideControl();
 			this.applyFromControl(descriptor, current);
-			statusValue.setText(
-				smartFadeStatus(effective, descriptor.smartFadeState),
-			);
 			this.updatePersistenceStatus(descriptor, statusEl);
 		};
 
@@ -354,7 +408,7 @@ export class WindowManagerModal extends Modal {
 				dropdown
 					.setDisabled(!descriptor.supported)
 					.addOptions({
-						inherit: "Use global setting",
+						inherit: `Use global (${this.actions.getSmartFadeDefaults().enabled ? "On" : "Off"})`,
 						enabled: "On for this window",
 						disabled: "Off for this window",
 					})
@@ -366,123 +420,124 @@ export class WindowManagerModal extends Modal {
 							enabled:
 								value === "inherit" ? undefined : value === "enabled",
 						});
-						this.openSmartFade.add(descriptor.runtimeId);
+						this.openSmartFade.set(descriptor.runtimeId, true);
 						this.render();
 					});
 			});
 
-		if (effective.enabled) {
-			this.renderSmartFadeOpacity(
-				body,
-				"Active opacity",
-				"Readable opacity while using or reading this window.",
-				effective.activeOpacity,
-				opacityPercent(effective.idleOpacity),
-				100,
-				(value) => applyPatch({ activeOpacity: value / 100 }),
-				descriptor.supported,
-			);
-			this.renderSmartFadeOpacity(
-				body,
-				"Idle opacity",
-				"See-through opacity used when the selected trigger fades this window.",
-				effective.idleOpacity,
-				50,
-				opacityPercent(effective.activeOpacity),
-				(value) => applyPatch({ idleOpacity: value / 100 }),
-				descriptor.supported,
-			);
-
-			new Setting(body)
-				.setName("Transition duration")
-				.setDesc("How quickly opacity changes. Use 0 ms for instant changes; 150–200 ms usually feels natural.")
-				.setDisabled(!descriptor.supported)
-				.addSlider((slider) => {
-					slider
-						.setDisabled(!descriptor.supported)
-						.setLimits(0, 500, 10)
-						.setValue(effective.transitionDurationMs)
-						.setInstant(true)
-						.setDisplayFormat((value) =>
-							this.formatTransitionDuration(value),
-						)
-						.onChange((value) =>
-							applyPatch({ transitionDurationMs: value }),
-						);
-				});
-
-			this.renderSmartFadeToggle(
-				body,
-				"Respect reduced motion",
-				"Use instant changes when Reduce Motion is enabled in macOS Accessibility settings.",
-				effective.respectReducedMotion,
-				(value) => applyPatch({ respectReducedMotion: value }),
-				descriptor.supported,
-			);
-
-			new Setting(body)
-				.setName("Fade trigger")
-				.setDesc("Focus loss only keeps this window bright while you read it.")
-				.setDisabled(!descriptor.supported)
-				.addDropdown((dropdown) => {
-					dropdown
-						.setDisabled(!descriptor.supported)
-						.addOptions({
-							"inactivity-and-focus-loss": "Inactivity and focus loss",
-							"focus-loss-only": "Focus loss only",
-							"inactivity-only": "Inactivity only",
-						})
-						.setValue(smartFadeTrigger(effective))
-						.onChange((value) => {
-							if (isSmartFadeTrigger(value)) {
-								applyPatch(smartFadeTriggerOverrides(value));
-								this.openSmartFade.add(descriptor.runtimeId);
-								this.render();
-							}
-						});
-				});
-
-			if (effective.fadeOnInactivity) {
-				new Setting(body)
-					.setName("Idle delay")
-					.setDesc("How long to wait after the last reading or editing activity.")
-					.setDisabled(!descriptor.supported)
-					.addSlider((slider) => {
-						slider
-							.setDisabled(!descriptor.supported)
-							.setLimits(250, 10_000, 250)
-							.setValue(effective.idleDelayMs)
-							.setInstant(true)
-							.setDisplayFormat((value) => this.formatDelay(value))
-							.onChange((value) => applyPatch({ idleDelayMs: value }));
-					});
-
-				this.renderSmartFadeToggle(
-					body,
-					"Brighten on keyboard activity",
-					"Typing and navigation keys, including arrows and Page Up or Down, count as activity.",
-					effective.brightenOnKeyboard,
-					(value) => applyPatch({ brightenOnKeyboard: value }),
-					descriptor.supported,
-				);
-				this.renderSmartFadeToggle(
-					body,
-					"Brighten on pointer and scroll activity",
-					"Clicking or scrolling with a mouse, trackpad, or scrollbar counts as activity.",
-					effective.brightenOnPointer,
-					(value) => applyPatch({ brightenOnPointer: value }),
-					descriptor.supported,
-				);
-			}
-		}
+		const activeSlider = this.renderSmartFadeOpacity(
+			body,
+			"Active opacity",
+			"Readable opacity while using or reading this window.",
+			effective.activeOpacity,
+			opacityPercent(effective.idleOpacity),
+			100,
+			(value) => applyPatch({ activeOpacity: value / 100 }),
+			descriptor.supported,
+		);
+		const idleSlider = this.renderSmartFadeOpacity(
+			body,
+			"Idle opacity",
+			"See-through opacity used when the selected trigger fades this window.",
+			effective.idleOpacity,
+			50,
+			opacityPercent(effective.activeOpacity),
+			(value) => applyPatch({ idleOpacity: value / 100 }),
+			descriptor.supported,
+		);
 
 		new Setting(body)
+			.setName("Transition duration")
+			.setDesc("How quickly opacity changes. Use 0 ms for instant changes; 150–200 ms usually feels natural.")
+			.setDisabled(!descriptor.supported)
+			.addSlider((slider) => {
+				slider
+					.setDisabled(!descriptor.supported)
+					.setLimits(0, 500, 10)
+					.setValue(effective.transitionDurationMs)
+					.setInstant(true)
+					.setDisplayFormat((value) =>
+						this.formatTransitionDuration(value),
+					)
+					.onChange((value) =>
+						applyPatch({ transitionDurationMs: value }),
+					);
+			});
+
+		this.renderSmartFadeToggle(
+			body,
+			"Respect reduced motion",
+			"Use instant changes when Reduce Motion is enabled in macOS Accessibility settings.",
+			effective.respectReducedMotion,
+			(value) => applyPatch({ respectReducedMotion: value }),
+			descriptor.supported,
+		);
+
+		new Setting(body)
+			.setName("Fade trigger")
+			.setDesc("Focus loss only keeps this window bright while you read it.")
+			.setDisabled(!descriptor.supported)
+			.addDropdown((dropdown) => {
+				dropdown
+					.setDisabled(!descriptor.supported)
+					.addOptions({
+						"inactivity-and-focus-loss": "Inactivity and focus loss",
+						"focus-loss-only": "Focus loss only",
+						"inactivity-only": "Inactivity only",
+					})
+					.setValue(smartFadeTrigger(effective))
+					.onChange((value) => {
+						if (isSmartFadeTrigger(value)) {
+							applyPatch(smartFadeTriggerOverrides(value));
+							this.openSmartFade.set(descriptor.runtimeId, true);
+							this.render();
+						}
+					});
+			});
+
+		new Setting(body)
+			.setName("Idle delay")
+			.setDesc("How long to wait after the last activity. Used only with an inactivity trigger.")
+			.setDisabled(!descriptor.supported || !effective.fadeOnInactivity)
+			.addSlider((slider) => {
+				slider
+					.setDisabled(!descriptor.supported || !effective.fadeOnInactivity)
+					.setLimits(250, 10_000, 250)
+					.setValue(effective.idleDelayMs)
+					.setInstant(true)
+					.setDisplayFormat((value) => this.formatDelay(value))
+					.onChange((value) => applyPatch({ idleDelayMs: value }));
+			});
+
+		this.renderSmartFadeToggle(
+			body,
+			"Brighten on keyboard activity",
+			"Typing and navigation keys, including arrows and Page Up or Down, count as activity.",
+			effective.brightenOnKeyboard,
+			(value) => applyPatch({ brightenOnKeyboard: value }),
+			descriptor.supported && effective.fadeOnInactivity,
+		);
+		this.renderSmartFadeToggle(
+			body,
+			"Brighten on pointer and scroll activity",
+			"Clicking or scrolling with a mouse, trackpad, or scrollbar counts as activity.",
+			effective.brightenOnPointer,
+			(value) => applyPatch({ brightenOnPointer: value }),
+			descriptor.supported && effective.fadeOnInactivity,
+		);
+
+		const overrideSetting = new Setting(body)
 			.setName("Window overrides")
 			.setDesc("Remove custom values and follow all global smart fade settings.")
 			.setDisabled(
 				!descriptor.supported || getCurrent().smartFade === undefined,
 			)
-			.addButton((button) =>
+			.addButton((button) => {
+				refreshOverrideControl = () => {
+					const disabled = !descriptor.supported || getCurrent().smartFade === undefined;
+					overrideSetting.setDisabled(disabled);
+					button.setDisabled(disabled);
+				};
 				button
 					.setButtonText("Use global settings")
 					.setDisabled(
@@ -492,10 +547,10 @@ export class WindowManagerModal extends Modal {
 						const current = clearSmartFadeOverrides(getCurrent());
 						setCurrent(current);
 						this.applyFromControl(descriptor, current);
-						this.openSmartFade.add(descriptor.runtimeId);
+						this.openSmartFade.set(descriptor.runtimeId, true);
 						this.render();
-					}),
-			);
+					});
+			});
 	}
 
 	private renderSmartFadeOpacity(
@@ -507,12 +562,14 @@ export class WindowManagerModal extends Modal {
 		maximum: number,
 		onChange: (value: number) => void,
 		supported: boolean,
-	): void {
+	): SliderComponent {
+		let control!: SliderComponent;
 		new Setting(container)
 			.setName(name)
 			.setDesc(description)
 			.setDisabled(!supported)
 			.addSlider((slider) => {
+				control = slider;
 				slider
 					.setDisabled(!supported)
 					.setLimits(minimum, maximum, 1)
@@ -521,6 +578,7 @@ export class WindowManagerModal extends Modal {
 					.setDisplayFormat((opacity) => `${opacity}%`)
 					.onChange(onChange);
 			});
+		return control;
 	}
 
 	private renderSmartFadeToggle(
@@ -587,6 +645,8 @@ export class WindowManagerModal extends Modal {
 			callback();
 		} finally {
 			this.suppressRefresh = false;
+			this.structure = windowManagerStructure(this.registry.descriptors);
+			this.updateStatuses();
 		}
 	}
 }

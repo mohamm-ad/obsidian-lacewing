@@ -8,7 +8,7 @@ import {
 	type ContrastShieldLevel,
 	type WindowPreference,
 } from "../model/settings";
-import type { PersistenceIdentity } from "../model/window-target";
+import type { PersistenceIdentity, WindowTargetDescriptor } from "../model/window-target";
 import type { SmartFadeState } from "../behavior/smart-fade-state-machine";
 
 export function updateWindowPreference(
@@ -101,4 +101,19 @@ export function persistenceLabel(
 		return "Session only — mixed tabs";
 	}
 	return "Session only — not a Markdown note";
+}
+
+// Runtime focus and fade changes only update status text, never rebuild controls.
+export function windowManagerStructure(descriptors: readonly WindowTargetDescriptor[]): string {
+	return JSON.stringify(descriptors.map((descriptor) => ({
+		runtimeId: descriptor.runtimeId,
+		kind: descriptor.kind,
+		label: descriptor.label,
+		persistence: descriptor.persistence,
+		preference: descriptor.preference,
+		smartFade: descriptor.smartFade,
+		contrastShield: descriptor.contrastShield,
+		supported: descriptor.supported,
+		error: descriptor.error,
+	})));
 }

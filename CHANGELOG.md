@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.2 — 2026-09-11
+
+- Include Lacewing in the ribbon icon tooltip.
+- Prevent Smart Fade state changes from rebuilding window manager controls,
+  and preserve scroll position, keyboard focus, and expanded sections.
+- Keep Smart Fade controls visible when changing modes; disable inactivity
+  controls when they do not apply.
+- Add a global Smart Fade toggle to the window manager and show the inherited
+  on/off state in each window’s settings.
+- Keep active and idle opacity sliders synchronized with saved values.
+- Default new installations to focus loss only, with a 5-second delay when
+  inactivity fading is selected. Preserve existing saved preferences.
+
 ## 1.0.1 — 2026-08-29
 
 - Remove the redundant word "Obsidian" from the plugin description to meet

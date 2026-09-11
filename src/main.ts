@@ -112,7 +112,7 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(scheduleSync);
 		this.addRibbonIcon(
 			"picture-in-picture-2",
-			"Open window manager",
+			"Lacewing: Open window manager",
 			() => this.openWindowManager(),
 		);
 
@@ -285,6 +285,8 @@ export default class WindowOverlayPlugin extends Plugin {
 		}
 
 		new WindowManagerModal(this.app, this.registry, {
+			getSmartFadeDefaults: () => this.currentSettings.smartFadeDefaults,
+			setSmartFadeDefaults: (patch) => this.setSmartFadeDefaults(patch),
 			isSaved: (identity) => this.store?.has(identity) ?? false,
 			resolveSmartFade: (_descriptor, preference) =>
 				resolveSmartFadeSettings(

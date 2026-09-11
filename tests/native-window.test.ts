@@ -17,6 +17,7 @@ const timerHost = {
 
 const INSTANT_SMART_FADE_SETTINGS = {
 	...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 	transitionDurationMs: 0,
 };
 
@@ -292,6 +293,7 @@ describe("native window controller", () => {
 		expect(nativeWindow.opacity).toBe(0.6);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: false,
 		});
 		expect(nativeWindow.opacity).toBe(0.35);
@@ -311,6 +313,7 @@ describe("native window controller", () => {
 		);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			activeOpacity: 0.9,
 			idleOpacity: 0.6,
@@ -346,6 +349,7 @@ describe("native window controller", () => {
 		);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			activeOpacity: 0.9,
 			idleOpacity: 0.5,
@@ -374,6 +378,7 @@ describe("native window controller", () => {
 		);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			transitionDurationMs: 180,
 			respectReducedMotion: true,
@@ -398,6 +403,7 @@ describe("native window controller", () => {
 		);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			transitionDurationMs: 100,
 			respectReducedMotion: false,
@@ -422,6 +428,7 @@ describe("native window controller", () => {
 		);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			transitionDurationMs: 500,
 		});
@@ -447,6 +454,7 @@ describe("native window controller", () => {
 		);
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			activeOpacity: 0.9,
 			transitionDurationMs: 100,
@@ -479,6 +487,7 @@ describe("native window controller", () => {
 		});
 		controller.setSmartFade({
 			...DEFAULT_SMART_FADE_SETTINGS,
+		fadeOnInactivity: true,
 			enabled: true,
 			transitionDurationMs: 100,
 		});

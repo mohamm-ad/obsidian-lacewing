@@ -86,9 +86,13 @@ deletion.
 
 Smart Fade switches a window between a readable active opacity and a more
 transparent idle opacity. Enable and configure the global default under
-**Settings → Lacewing Window Transparency → Smart fade**. Expand **Smart fade**
+**Settings → Lacewing Window Transparency → Global smart fade**, or use the
+**Global smart fade** toggle at the top of the Window Manager. Expand **Smart fade**
 on any Window Manager card to inherit the global behavior or override it for
 that window.
+
+New installations start with **Focus loss only** and a **5-second idle delay**
+if an inactivity trigger is selected. Existing saved settings are preserved.
 
 Three triggers are available:
 

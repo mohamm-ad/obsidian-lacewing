@@ -5,7 +5,7 @@ export const OPACITY_STEP = 0.05;
 export const DEFAULT_OVERLAY_OPACITY = 0.85;
 export const MIN_IDLE_DELAY_MS = 250;
 export const MAX_IDLE_DELAY_MS = 10_000;
-export const DEFAULT_IDLE_DELAY_MS = 1_250;
+export const DEFAULT_IDLE_DELAY_MS = 5_000;
 export const MIN_TRANSITION_DURATION_MS = 0;
 export const MAX_TRANSITION_DURATION_MS = 500;
 export const DEFAULT_TRANSITION_DURATION_MS = 180;
@@ -79,7 +79,7 @@ export const DEFAULT_SMART_FADE_SETTINGS: Readonly<SmartFadeSettings> = {
 	idleOpacity: 0.6,
 	idleDelayMs: DEFAULT_IDLE_DELAY_MS,
 	fadeOnBlur: true,
-	fadeOnInactivity: true,
+	fadeOnInactivity: false,
 	brightenOnKeyboard: true,
 	brightenOnPointer: true,
 	transitionDurationMs: DEFAULT_TRANSITION_DURATION_MS,
@@ -338,7 +338,12 @@ export function normalizeSettings(value: unknown): WindowOverlaySettings {
 		typeof value.schemaVersion === "number" ? value.schemaVersion : null;
 	const smartFadeFallback =
 		schemaVersion !== null && schemaVersion < SETTINGS_SCHEMA_VERSION
-			? { ...DEFAULT_SMART_FADE_SETTINGS, transitionDurationMs: 0 }
+			? {
+					...DEFAULT_SMART_FADE_SETTINGS,
+					transitionDurationMs: 0,
+					fadeOnInactivity: true,
+					idleDelayMs: 1_250,
+				}
 			: DEFAULT_SMART_FADE_SETTINGS;
 
 	return {
