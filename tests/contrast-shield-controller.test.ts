@@ -49,3 +49,20 @@ describe("contrast shield controller", () => {
 		).toBeUndefined();
 	});
 });
+
+
+it("pauses the shield while remembering changes for resume", () => {
+	const document = fakeDocument("legacy");
+	const controller = new ContrastShieldController(document);
+	controller.set("strong");
+	controller.setPaused(true);
+	expect(controller.level).toBe("strong");
+	expect(document.documentElement.dataset.windowOverlayContrastShield).toBeUndefined();
+	controller.set("medium");
+	expect(document.documentElement.dataset.windowOverlayContrastShield).toBeUndefined();
+	controller.setPaused(false);
+	expect(document.documentElement.dataset.windowOverlayContrastShield).toBe("medium");
+	controller.setPaused(true);
+	controller.dispose();
+	expect(document.documentElement.dataset.windowOverlayContrastShield).toBe("legacy");
+});

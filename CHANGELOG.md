@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 — 2026-10-02
+
+- Assign Command–Option–Shift–L to pause/resume by default, customizable in
+  Obsidian’s Hotkeys settings.
+- Add a prominent Pause / Resume Lacewing button and a command for toggling all
+  effects without resetting preferences. Pause covers current and newly opened
+  windows, suspends Smart Fade, and lasts until resume or plugin reload.
+- Show pause state in the ribbon icon and tooltip so it remains visible
+  after the notification disappears.
+
 ## 1.0.2 — 2026-09-11
 
 - Include Lacewing in the ribbon icon tooltip.

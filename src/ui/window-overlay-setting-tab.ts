@@ -207,9 +207,14 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 			},
 			{
 				type: "group",
-				heading: "Active-window shortcuts",
+				heading: "Keyboard shortcuts",
 				cls: "window-overlay-settings-group",
 				items: [
+					this.shortcutDefinition(
+						"Pause / resume all effects",
+						"Temporarily pause every window without resetting your preferences.",
+						[["Default", RECOMMENDED_HOTKEYS.togglePause]],
+					),
 					this.shortcutDefinition(
 						"Adjust opacity",
 						"Decrease or increase the active window in 5% steps. With smart fade on, these adjust active opacity.",
@@ -246,7 +251,7 @@ export class WindowOverlaySettingTab extends PluginSettingTab {
 					),
 					{
 						name: "Customize shortcuts",
-						desc: "Suggested shortcuts are shown here but are not assigned automatically. Open Settings → Hotkeys and search for “Lacewing Window Transparency” to assign or customize them.",
+						desc: "Pause / resume has a default shortcut; the other shortcuts are suggestions. Open Settings → Hotkeys and search for “Lacewing Window Transparency” to assign or customize them.",
 						aliases: ["Hotkeys", "Keyboard shortcuts"],
 					},
 				],

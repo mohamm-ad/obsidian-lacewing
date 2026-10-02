@@ -49,6 +49,8 @@ export class WindowRegistry {
 	private readonly targets = new Map<string, ManagedWindowTarget>();
 	private readonly listeners = new Set<() => void>();
 	private disposed = false;
+	private paused = false;
+	private changingPause = false;
 
 	constructor(
 		private readonly adapter: ElectronWindowAdapter,
@@ -59,6 +61,26 @@ export class WindowRegistry {
 		private readonly resolveContrastShield: ContrastShieldResolver = () =>
 			"none",
 	) {}
+
+	get isPaused(): boolean {
+		return this.paused;
+	}
+
+	setPaused(paused: boolean): boolean {
+		this.paused = paused;
+		let applied = true;
+		this.changingPause = true;
+		try {
+			for (const target of this.targets.values()) {
+				if (target.controller && !target.controller.setPaused(paused)) applied = false;
+				if (!target.shieldController.setPaused(paused)) applied = false;
+			}
+		} finally {
+			this.changingPause = false;
+			this.emitChange();
+		}
+		return applied;
+	}
 
 	onChange(listener: () => void): () => void {
 		this.listeners.add(listener);
@@ -233,6 +255,7 @@ export class WindowRegistry {
 					error: null,
 				};
 				this.targets.set(candidate.runtimeId, target);
+				target.shieldController.setPaused(this.paused);
 				target.shieldController.set(
 					this.resolveContrastShield(persistence),
 				);
@@ -254,6 +277,7 @@ export class WindowRegistry {
 						candidate.document,
 						() => this.emitChange(),
 					);
+					target.controller.setPaused(this.paused);
 					const preference = this.resolvePreference(persistence);
 					if (preference) {
 						target.controller.setPreference(preference);
@@ -303,7 +327,7 @@ export class WindowRegistry {
 	}
 
 	private emitChange(): void {
-		if (this.disposed) {
+		if (this.disposed || this.changingPause) {
 			return;
 		}
 		for (const listener of this.listeners) {

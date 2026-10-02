@@ -549,3 +549,65 @@ describe("electron window adapter", () => {
 		expect(document.documentElement.dataset.windowOverlayId).toBeUndefined();
 	});
 });
+
+
+describe("pause and resume", () => {
+	it("cancels fading and ignores activity while preserving the latest settings", async () => {
+		vi.useFakeTimers();
+		const native = new MockNativeWindow(90);
+		native.focused = true;
+		const document = fakeDocument();
+		const controller = new NativeWindowController(native, document, vi.fn(), timerHost);
+		try {
+			controller.setPreference({ opacity: 0.8, pinned: true });
+			controller.setSmartFade({ ...DEFAULT_SMART_FADE_SETTINGS, enabled: true, fadeOnInactivity: true, idleDelayMs: 250 });
+			await vi.advanceTimersByTimeAsync(300);
+			controller.setPaused(true);
+			expect([native.opacity, native.pinned, controller.effectiveOpacity]).toEqual([1, false, 1]);
+			expect(controller.preference).toEqual({ opacity: 0.8, pinned: true });
+			expect(controller.smartFadeConfiguration.enabled).toBe(true);
+			controller.setPreference({ opacity: 0.75, pinned: true });
+			controller.setSmartFade({ ...INSTANT_SMART_FADE_SETTINGS, enabled: true, activeOpacity: 0.85 });
+			native.emit("focus");
+			native.emit("show");
+			native.emit("blur");
+			document.dispatchEvent(new Event("keydown"));
+			await vi.advanceTimersByTimeAsync(10_000);
+			expect([native.opacity, native.pinned]).toEqual([1, false]);
+			expect(vi.getTimerCount()).toBe(0);
+			controller.setPaused(false);
+			expect([native.opacity, native.pinned]).toEqual([0.85, true]);
+			await vi.advanceTimersByTimeAsync(5_000);
+			expect(native.opacity).toBe(0.6);
+		} finally {
+			controller.dispose();
+			vi.useRealTimers();
+		}
+	});
+
+	it("restores a fixed preference and the original native state on unload while paused", () => {
+		const native = new MockNativeWindow(91);
+		native.opacity = 0.95;
+		const controller = new NativeWindowController(native, fakeDocument(), vi.fn(), timerHost);
+		controller.setPreference({ opacity: 0.7, pinned: true });
+		controller.setPaused(true);
+		controller.setPaused(false);
+		expect([native.opacity, native.pinned]).toEqual([0.7, true]);
+		controller.setPaused(true);
+		controller.dispose();
+		expect([native.opacity, native.pinned]).toEqual([0.95, false]);
+	});
+
+	it("resumes untouched windows to their adopted state", () => {
+		const native = new MockNativeWindow(92);
+		native.opacity = 0.9;
+		native.pinned = true;
+		const controller = new NativeWindowController(native, fakeDocument(), vi.fn(), timerHost);
+		controller.setPaused(true);
+		expect([native.opacity, native.pinned]).toEqual([1, false]);
+		controller.setSmartFade({ ...DEFAULT_SMART_FADE_SETTINGS, enabled: false });
+		controller.setPaused(false);
+		expect([native.opacity, native.pinned]).toEqual([0.9, true]);
+		controller.dispose();
+	});
+});

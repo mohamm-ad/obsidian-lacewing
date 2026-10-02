@@ -265,3 +265,46 @@ describe("window registry", () => {
 		expect(nativeWindow.listeners.size).toBe(0);
 	});
 });
+
+
+it("pauses existing and newly opened windows without losing session-only preferences", async () => {
+	const windows = [new RegistryNativeWindow(90), new RegistryNativeWindow(91)];
+	const adapter = {
+		resolve: vi.fn(async (_kind, _document, id: string) => windows[id === "one" ? 0 : 1]),
+	} as unknown as ElectronWindowAdapter;
+	const registry = new WindowRegistry(adapter, () => ({ opacity: 0.8, pinned: true }), undefined, () => "strong");
+	const one = candidate("one", "popout", []);
+	const two = candidate("two", "popout", []);
+	await registry.sync([one]);
+	registry.setPreference("one", { opacity: 0.65, pinned: true });
+	registry.setContrastShield("one", "medium");
+	registry.setPaused(true);
+	await registry.sync([one, two]);
+	expect(windows.map((window) => [window.opacity, window.pinned])).toEqual([[1, false], [1, false]]);
+	expect(one.document.documentElement.dataset.windowOverlayContrastShield).toBeUndefined();
+	expect(two.document.documentElement.dataset.windowOverlayContrastShield).toBeUndefined();
+	registry.setPreference("one", { opacity: 0.7, pinned: false });
+	registry.setPaused(false);
+	expect(windows.map((window) => [window.opacity, window.pinned])).toEqual([[0.7, false], [0.8, true]]);
+	expect(one.document.documentElement.dataset.windowOverlayContrastShield).toBe("medium");
+	expect(two.document.documentElement.dataset.windowOverlayContrastShield).toBe("strong");
+	registry.dispose();
+});
+
+it("honors pause when native window resolution finishes later", async () => {
+	const native = new RegistryNativeWindow(92);
+	let resolveNative!: (window: NativeBrowserWindow) => void;
+	const adapter = {
+		resolve: () => new Promise<NativeBrowserWindow>((resolve) => { resolveNative = resolve; }),
+	} as unknown as ElectronWindowAdapter;
+	const registry = new WindowRegistry(adapter, () => ({ opacity: 0.75, pinned: true }));
+	const pending = registry.sync([candidate("main", "main", [])]);
+	registry.setPaused(true);
+	resolveNative(native);
+	await pending;
+	expect([native.opacity, native.pinned]).toEqual([1, false]);
+	expect(native.setOpacity).not.toHaveBeenCalledWith(0.75);
+	registry.setPaused(false);
+	expect([native.opacity, native.pinned]).toEqual([0.75, true]);
+	registry.dispose();
+});

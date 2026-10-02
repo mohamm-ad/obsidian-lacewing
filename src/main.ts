@@ -3,7 +3,10 @@ import {
 	Notice,
 	Platform,
 	Plugin,
+	setIcon,
+	setTooltip,
 } from "obsidian";
+import { RECOMMENDED_HOTKEYS } from "./commands/recommended-hotkeys";
 import {
 	ActiveWindowCommands,
 	type CommandResult,
@@ -33,11 +36,37 @@ import { WindowRegistry } from "./windows/window-registry";
 export default class WindowOverlayPlugin extends Plugin {
 	override settings: WindowOverlaySettings = emptySettings();
 	private registry: WindowRegistry | null = null;
+	private ribbonEl: HTMLElement | null = null;
 	private source: ObsidianWindowSource | null = null;
 	private store: PreferenceStore | null = null;
 	private activeCommands: ActiveWindowCommands | null = null;
 	private readonly overlays = new OverlaySessionTracker();
 	private syncQueue: Promise<void> = Promise.resolve();
+
+	get isPaused(): boolean {
+		return this.registry?.isPaused ?? false;
+	}
+
+	togglePaused(): void {
+		if (!this.registry) {
+			new Notice("Lacewing controls are unavailable on this system.");
+			return;
+		}
+		const paused = !this.registry.isPaused;
+		const applied = this.registry.setPaused(paused);
+		this.updateRibbon();
+		new Notice(applied
+			? paused ? "Lacewing paused. Your settings are preserved." : "Lacewing resumed."
+			: "Lacewing could not update every window. Check the window manager for errors.");
+	}
+
+	private updateRibbon(): void {
+		if (!this.ribbonEl) return;
+		setIcon(this.ribbonEl, this.isPaused ? "circle-pause" : "picture-in-picture-2");
+		setTooltip(this.ribbonEl, this.isPaused
+			? "Lacewing is paused: Open window manager"
+			: "Lacewing is on: Open window manager", { placement: "right" });
+	}
 
 	get currentSettings(): WindowOverlaySettings {
 		return this.store?.settings ?? this.settings;
@@ -110,12 +139,21 @@ export default class WindowOverlayPlugin extends Plugin {
 			}),
 		);
 		this.app.workspace.onLayoutReady(scheduleSync);
-		this.addRibbonIcon(
+		this.ribbonEl = this.addRibbonIcon(
 			"picture-in-picture-2",
 			"Lacewing: Open window manager",
 			() => this.openWindowManager(),
 		);
 
+		this.updateRibbon();
+
+		this.addCommand({
+			id: "toggle-pause",
+			name: "Pause / resume all effects",
+			// Explicitly requested default for the master toggle; users can override it.
+			hotkeys: RECOMMENDED_HOTKEYS.togglePause,
+			callback: () => this.togglePaused(),
+		});
 		this.addCommand({
 			id: "open-window-manager",
 			name: "Open window manager",
@@ -174,6 +212,7 @@ export default class WindowOverlayPlugin extends Plugin {
 		this.store?.dispose();
 		this.overlays.clear();
 		this.registry = null;
+		this.ribbonEl = null;
 		this.source = null;
 		this.store = null;
 		this.activeCommands = null;
@@ -285,6 +324,7 @@ export default class WindowOverlayPlugin extends Plugin {
 		}
 
 		new WindowManagerModal(this.app, this.registry, {
+			togglePaused: () => this.togglePaused(),
 			getSmartFadeDefaults: () => this.currentSettings.smartFadeDefaults,
 			setSmartFadeDefaults: (patch) => this.setSmartFadeDefaults(patch),
 			isSaved: (identity) => this.store?.has(identity) ?? false,

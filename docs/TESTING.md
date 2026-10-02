@@ -20,7 +20,7 @@ It verifies:
   restoration
 - manager view-model and active-window command targeting
 - macOS recommended-shortcut glyph and accessible-label formatting
-- absence of automatically assigned command hotkeys
+- uniqueness of the default pause shortcut among the suggested hotkeys
 - overlay duplicate tracking
 - Smart Fade migration, clamping, active/idle timing, activity triggers,
   all three fade-trigger modes, reading navigation and scrolling, focus/blur
@@ -114,7 +114,7 @@ Window Transparency** in Community plugins, and reload Obsidian before testing.
     Confirm idle-delay and activity controls remain visible but are disabled
     for focus-loss-only mode, without scrolling or losing keyboard focus.
 27. Confirm each command's suggested macOS shortcut is visible beside the
-    relevant settings action but no shortcut is assigned automatically. Open
+    relevant settings action. Only pause/resume has a default shortcut. Open
     the Window Manager and confirm its effective-opacity, pinned, and focused
     badges plus its per-control shortcut hints are readable in both light and
     dark themes without adding emphasis around the full card.
@@ -137,6 +137,21 @@ Window Transparency** in Community plugins, and reload Obsidian before testing.
     is **Focus loss only**, and selecting an inactivity trigger reveals an
     enabled idle delay of **5 s**. Upgrade a vault with existing custom Smart
     Fade settings and confirm its triggers, delays, and overrides are retained.
+
+33. Configure fixed opacity, pinning, Smart Fade, and contrast shields across
+    the main window and a session-only pop-out. Click **Pause Lacewing** at
+    the top of the manager. Confirm every window becomes fully opaque and
+    unpinned, shields disappear, and badges show paused state. Switch apps,
+    scroll, type, and wait past the idle delay; all effects should stay paused.
+34. While paused, open another pop-out and edit an existing window’s settings.
+    Confirm effects remain paused. Click **Resume Lacewing** and confirm each
+    window uses its latest settings, including session-only preferences.
+35. Run **Pause / resume all effects** from the Command Palette and with the
+    default **⌘⌥⇧L** hotkey. Reassign or remove it in Hotkeys settings and
+    confirm the customization takes effect. Confirm the manager’s button and status follow the change.
+    Confirm the ribbon changes to a pause icon with a paused tooltip, then
+    returns to its normal icon and on-state tooltip after resuming. Reload the
+    plugin while paused and confirm it resumes saved settings.
 
 The plugin intentionally does not test or support all-Spaces, click-through,
 above-full-screen overlays, vibrancy, or capture exclusion.

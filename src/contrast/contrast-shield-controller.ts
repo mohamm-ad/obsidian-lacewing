@@ -5,6 +5,7 @@ const DATASET_KEY = "windowOverlayContrastShield";
 export class ContrastShieldController {
 	private readonly originalMarker: string | undefined;
 	private current: ContrastShieldLevel = "none";
+	private paused = false;
 
 	constructor(private readonly document: Document) {
 		this.originalMarker = document.documentElement.dataset[DATASET_KEY];
@@ -17,7 +18,7 @@ export class ContrastShieldController {
 	set(level: ContrastShieldLevel): boolean {
 		try {
 			this.current = level;
-			if (level === "none") {
+			if (this.paused || level === "none") {
 				delete this.document.documentElement.dataset[DATASET_KEY];
 			} else {
 				this.document.documentElement.dataset[DATASET_KEY] = level;
@@ -26,6 +27,11 @@ export class ContrastShieldController {
 		} catch {
 			return false;
 		}
+	}
+
+	setPaused(paused: boolean): boolean {
+		this.paused = paused;
+		return this.set(this.current);
 	}
 
 	dispose(): void {

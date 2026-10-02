@@ -7,6 +7,7 @@ function recommendedHotkey(key: string): Hotkey[] {
 }
 
 export const RECOMMENDED_HOTKEYS = {
+	togglePause: recommendedHotkey("L"),
 	openWindowManager: recommendedHotkey("O"),
 	openCurrentNoteAsOverlay: recommendedHotkey("N"),
 	increaseActiveWindowOpacity: recommendedHotkey("]"),

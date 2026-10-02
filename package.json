@@ -1,6 +1,6 @@
 {
   "name": "obsidian-lacewing",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Control the transparency and always-on-top behavior of Obsidian windows on macOS.",
   "type": "module",
   "main": "main.js",

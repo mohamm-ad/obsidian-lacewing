@@ -1,7 +1,7 @@
 {
   "id": "lacewing",
   "name": "Lacewing Window Transparency",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "minAppVersion": "1.13.0",
   "description": "Control window transparency and always-on-top behavior with per-window settings, Smart Fade, Contrast Shield, and quick note overlays.",
   "author": "Mohammad",

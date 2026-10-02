@@ -45,10 +45,11 @@ describe("smart fade UI stability", () => {
 		const modal = new WindowManagerModal({} as App, registry, {} as WindowManagerActions);
 		// Substitute only the DOM drawing; exercise the real registry subscription.
 		const view = modal as unknown as {
-			structure: string; render(): void; updateStatuses(): void;
+			structure: string; renderedPaused: boolean; render(): void; updateStatuses(): void;
 		};
 		const render = vi.spyOn(view, "render").mockImplementation(() => {
 			view.structure = windowManagerStructure(registry.descriptors);
+			view.renderedPaused = Boolean(registry.isPaused);
 		});
 		const statuses = vi.spyOn(view, "updateStatuses").mockImplementation(() => {});
 		modal.onOpen();
@@ -62,6 +63,11 @@ describe("smart fade UI stability", () => {
 		current.smartFade.idleDelayMs = 7_000;
 		notify();
 		expect(render).toHaveBeenCalledTimes(2);
+		Object.assign(registry, { isPaused: true });
+		notify();
+		expect(render).toHaveBeenCalledTimes(3);
+		notify();
+		expect(render).toHaveBeenCalledTimes(3);
 	});
 
 	it("keeps global controls visible and refreshes disabled state without rebuilding the tab", () => {

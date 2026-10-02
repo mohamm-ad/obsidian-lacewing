@@ -25,6 +25,7 @@ export interface NativeWindowSnapshot {
 
 export class NativeWindowController {
 	private desired: WindowPreference | null = null;
+	private paused = false;
 	private error: string | null = null;
 	private readonly snapshot: NativeWindowSnapshot;
 	private smartFadeSettings: SmartFadeSettings = {
@@ -130,6 +131,7 @@ export class NativeWindowController {
 	}
 
 	get effectiveOpacity(): number {
+		if (this.paused) return MAX_OPACITY;
 		return this.smartFade.enabled
 			? this.smartFade.currentOpacity
 			: this.preference.opacity;
@@ -146,8 +148,11 @@ export class NativeWindowController {
 	setSmartFade(settings: SmartFadeSettings): boolean {
 		const wasEnabled = this.smartFade.enabled;
 		this.smartFadeSettings = { ...settings };
-		this.smartFade.update(this.smartFadeSettings, this.isFocused);
-		if (wasEnabled && !settings.enabled && !this.desired) {
+		this.smartFade.update(
+			{ ...this.smartFadeSettings, enabled: settings.enabled && !this.paused },
+			this.isFocused,
+		);
+		if (!this.paused && wasEnabled && !settings.enabled && !this.desired) {
 			return this.applyNative(
 				this.snapshot.opacity,
 				this.snapshot.pinned,
@@ -156,6 +161,19 @@ export class NativeWindowController {
 			);
 		}
 		return this.applyCurrent();
+	}
+
+	setPaused(paused: boolean): boolean {
+		this.paused = paused;
+		this.opacityTransition.cancel();
+		this.smartFade.update(
+			{ ...this.smartFadeSettings, enabled: this.smartFadeSettings.enabled && !paused },
+			this.isFocused,
+		);
+		if (!paused && !this.desired && !this.smartFadeSettings.enabled) {
+			return this.applyNative(this.snapshot.opacity, this.snapshot.pinned, false, false);
+		}
+		return this.applyCurrent(false);
 	}
 
 	focus(): void {
@@ -205,6 +223,9 @@ export class NativeWindowController {
 	}
 
 	private applyCurrent(animate = true): boolean {
+		if (this.paused) {
+			return this.applyNative(MAX_OPACITY, false, true, false);
+		}
 		if (!this.desired && !this.smartFade.enabled) {
 			return true;
 		}

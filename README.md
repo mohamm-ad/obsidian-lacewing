@@ -52,8 +52,20 @@ After Lacewing is listed in the Community Plugins directory:
 5. Optionally choose a **Contrast shield** or expand **Smart fade** for that
    window.
 
-Changes apply immediately. The main window and every pop-out are controlled
-independently.
+Changes apply immediately while Lacewing is on. The main window and every pop-out
+are controlled independently.
+
+### Pause or resume Lacewing
+
+Click **Pause Lacewing** at the top of the Window Manager to temporarily make
+every managed window fully opaque, unpin it, and remove its contrast shield.
+Smart Fade is suspended too. The ribbon shows a pause icon and a paused tooltip.
+Click **Resume Lacewing** to restore your settings.
+New windows also stay paused, and edits made while paused apply when you resume.
+
+Press **⌘⌥⇧L** (Command–Option–Shift–L), or run **Pause / resume all effects**
+from the Command Palette. Change or remove this default in Obsidian’s Hotkeys settings. Pause is temporary: it lasts
+until you resume or reload the plugin. It does not reset saved preferences.
 
 ### Open a note as an overlay
 
@@ -126,7 +138,8 @@ or Obsidian's built-in translucency setting.
 
 ## Commands and suggested shortcuts
 
-Lacewing does not claim hotkeys automatically. To assign one, open **Settings →
+Pause / resume uses **⌘⌥⇧L** by default. Other shortcuts below are suggestions.
+To assign or customize a shortcut, open **Settings →
 Hotkeys**, search for **Lacewing Window Transparency**, select the plus button
 beside a command, and press the shortcut you want.
 
@@ -141,6 +154,7 @@ Window Manager.
 | Increase active-window opacity | `⌘⌥⇧]` |
 | Decrease active-window opacity | `⌘⌥⇧[` |
 | Toggle active-window pinning | `⌘⌥⇧P` |
+| Pause / resume all effects | `⌘⌥⇧L` (assigned by default) |
 | Restore active window to 100% | `⌘⌥⇧0` |
 | Restore every managed overlay | `⌘⌥⇧R` |
 

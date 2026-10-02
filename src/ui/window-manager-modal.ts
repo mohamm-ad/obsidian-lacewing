@@ -31,6 +31,7 @@ import {
 import { descriptionWithHotkeys } from "./hotkey-hint";
 
 export interface WindowManagerActions {
+	togglePaused(): void;
 	getSmartFadeDefaults(): SmartFadeSettings;
 	setSmartFadeDefaults(patch: Partial<SmartFadeSettings>): void;
 	isSaved(identity: PersistenceIdentity): boolean;
@@ -54,6 +55,7 @@ export class WindowManagerModal extends Modal {
 	private suppressRefresh = false;
 	private readonly openSmartFade = new Map<string, boolean>();
 	private structure = "";
+	private renderedPaused = false;
 	private readonly cards = new Map<string, HTMLElement>();
 
 	constructor(
@@ -82,7 +84,8 @@ export class WindowManagerModal extends Modal {
 	}
 
 	private refresh(): void {
-		if (windowManagerStructure(this.registry.descriptors) !== this.structure) {
+		if (Boolean(this.registry.isPaused) !== this.renderedPaused ||
+			windowManagerStructure(this.registry.descriptors) !== this.structure) {
 			this.render();
 		} else {
 			this.updateStatuses();
@@ -93,17 +96,17 @@ export class WindowManagerModal extends Modal {
 		for (const descriptor of this.registry.descriptors) {
 			const card = this.cards.get(descriptor.runtimeId);
 			if (!card) continue;
-			card.querySelector(".is-opacity")?.setText(descriptor.smartFade.enabled
+			card.querySelector(".is-opacity")?.setText(this.registry.isPaused ? "Paused · 100%" : descriptor.smartFade.enabled
 				? smartFadeStatus(descriptor.smartFade, descriptor.smartFadeState)
 				: `${opacityPercent(descriptor.preference.opacity)}%`);
 			card.querySelector(".window-overlay-smart-fade-status")?.setText(
-				smartFadeStatus(descriptor.smartFade, descriptor.smartFadeState),
+				this.registry.isPaused ? "Paused" : smartFadeStatus(descriptor.smartFade, descriptor.smartFadeState),
 			);
 			card.querySelector<HTMLElement>(".is-focused")?.toggle(descriptor.focused);
-			card.querySelector<HTMLElement>(".is-pinned")?.toggle(descriptor.preference.pinned);
+			card.querySelector<HTMLElement>(".is-pinned")?.toggle(!this.registry.isPaused && descriptor.preference.pinned);
 			const shield = card.querySelector<HTMLElement>(".is-contrast-shield");
 			shield?.setText(`Shield: ${this.capitalize(descriptor.contrastShield)}`);
-			shield?.toggle(descriptor.contrastShield !== "none");
+			shield?.toggle(!this.registry.isPaused && descriptor.contrastShield !== "none");
 		}
 	}
 
@@ -122,6 +125,7 @@ export class WindowManagerModal extends Modal {
 		});
 		this.contentEl.scrollTop = scrollTop;
 		this.structure = windowManagerStructure(this.registry.descriptors);
+		this.renderedPaused = Boolean(this.registry.isPaused);
 		this.updateStatuses();
 	}
 
@@ -129,9 +133,23 @@ export class WindowManagerModal extends Modal {
 		this.cards.clear();
 		this.contentEl.empty();
 		this.contentEl.addClass("window-overlay-manager");
+		new Setting(this.contentEl)
+			.setName(this.registry.isPaused ? "Lacewing is paused" : "Lacewing is on")
+			.setDesc(descriptionWithHotkeys(
+				"Pause transparency, always on top, and contrast shield for every window without resetting your settings. Changes made while paused apply when you resume. Pause lasts until you resume or reload the plugin.",
+				RECOMMENDED_HOTKEYS.togglePause,
+				"Default shortcut",
+			))
+			.addButton((button) => button
+				.setButtonText(this.registry.isPaused ? "Resume Lacewing" : "Pause Lacewing")
+				.setCta()
+				.onClick(() => {
+					this.runWithoutRefresh(() => this.actions.togglePaused());
+					this.render();
+				}));
 		this.contentEl.createEl("p", {
 			cls: "window-overlay-intro",
-			text: "Adjust each Obsidian window independently. Changes apply immediately; keyboard shortcuts target whichever window is active.",
+			text: "Adjust each Obsidian window independently. Changes apply immediately unless paused; keyboard shortcuts target whichever window is active.",
 		});
 		new Setting(this.contentEl)
 			.setName("Global smart fade")
@@ -646,6 +664,7 @@ export class WindowManagerModal extends Modal {
 		} finally {
 			this.suppressRefresh = false;
 			this.structure = windowManagerStructure(this.registry.descriptors);
+			this.renderedPaused = Boolean(this.registry.isPaused);
 			this.updateStatuses();
 		}
 	}
